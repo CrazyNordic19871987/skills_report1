@@ -1,0 +1,878 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ONE! Summer Game 2026 — Лагерь будущего</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=Orbitron:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+/* ═══════════════════════════════════════════
+   TOKENS — ONE! Summer Game 2026
+   Colors: #ed7615 (orange), #132245 (dark blue), #ffffff (white)
+═══════════════════════════════════════════ */
+:root {
+  --bg:        #132245;
+  --bg2:       #0f1a35;
+  --bg3:       #1a2d4a;
+  --glass:     rgba(255,255,255,0.05);
+  --glass-b:   rgba(255,255,255,0.08);
+  --glass-h:   rgba(255,255,255,0.12);
+  --border:    rgba(255,255,255,0.1);
+  --border-h:  rgba(237,118,21,0.4);
+  --orange:    #ed7615;
+  --orange-dim:rgba(237,118,21,0.15);
+  --blue:      #132245;
+  --white:     #ffffff;
+  --muted:     rgba(255,255,255,0.5);
+  --muted2:    rgba(255,255,255,0.3);
+  --r:         12px;
+  --r-lg:      20px;
+}
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+html{scroll-behavior:smooth;font-size:16px}
+body{
+  font-family:'Space Grotesk',sans-serif;
+  background:var(--bg);color:var(--white);
+  min-height:100vh;overflow-x:hidden;
+  -webkit-text-size-adjust:100%;
+}
+
+/* ── Background image ── */
+body::before{
+  content:'';position:fixed;inset:0;
+  background:
+    url('bg.png') center/cover no-repeat,
+    radial-gradient(ellipse 80% 60% at 10% 5%,  rgba(237,118,21,0.08) 0%, transparent 60%),
+    radial-gradient(ellipse 60% 80% at 90% 90%, rgba(255,255,255,0.04) 0%, transparent 60%);
+  pointer-events:none;z-index:-1;
+}
+body::after{
+  content:'';position:fixed;inset:0;
+  background:rgba(19,34,69,0.85);
+  pointer-events:none;z-index:-1;
+}
+
+/* ── Loader ── */
+#app-loader{
+  position:fixed;inset:0;z-index:9999;
+  background:var(--bg);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  gap:20px;transition:opacity 0.6s ease;
+}
+.loader-ring{
+  width:60px;height:60px;border-radius:50%;
+  border:2px solid var(--border);
+  border-top-color:var(--orange);
+  animation:spin 0.8s linear infinite;
+}
+.loader-text{
+  font-family:'Orbitron',monospace;
+  font-size:1.2rem;
+  color:var(--orange);
+  letter-spacing:0.3em;
+  font-weight:700;
+}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* ═══════════════════════════════════════════
+   LAYOUT
+═══════════════════════════════════════════ */
+.app-shell{display:flex;min-height:100vh;position:relative;z-index:1}
+
+/* ── Sidebar nav ── */
+.sidebar{
+  width:72px;
+  background:var(--glass);
+  border-right:1px solid var(--border);
+  backdrop-filter:blur(24px);
+  display:flex;flex-direction:column;align-items:center;
+  padding:16px 0;gap:8px;
+  position:fixed;top:0;left:0;bottom:0;z-index:100;
+  transition:transform 0.3s ease;
+}
+.sidebar-logo{
+  font-family:'Orbitron',monospace;font-weight:900;font-size:0.55rem;
+  color:var(--orange);letter-spacing:0.15em;
+  writing-mode:vertical-lr;transform:rotate(180deg);
+  padding:10px 0 20px;border-bottom:1px solid var(--border);
+  width:100%;text-align:center;margin-bottom:8px;
+  line-height:1.3;
+}
+.nav-item{
+  width:48px;height:48px;border-radius:var(--r);
+  background:transparent;border:1px solid transparent;
+  color:var(--muted);cursor:pointer;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  gap:3px;transition:all 0.25s;position:relative;
+  font-size:1.1rem;
+}
+.nav-item span{font-size:0.4rem;font-weight:600;letter-spacing:0.05em;text-transform:uppercase;color:inherit}
+.nav-item:hover{background:var(--glass-b);color:var(--white);border-color:var(--border-h)}
+.nav-item.active{background:var(--orange-dim);border-color:var(--border-h);color:var(--orange);box-shadow:0 0 20px rgba(237,118,21,0.15)}
+.nav-item.active::before{
+  content:'';position:absolute;left:-1px;top:50%;transform:translateY(-50%);
+  width:3px;height:24px;background:var(--orange);border-radius:0 2px 2px 0;
+}
+.nav-spacer{flex:1}
+
+/* ── Mobile menu toggle ── */
+.mobile-menu-toggle{
+  display:none;position:fixed;top:12px;left:12px;z-index:200;
+  width:40px;height:40px;border-radius:8px;
+  background:var(--glass);border:1px solid var(--border);
+  color:var(--white);font-size:1.2rem;cursor:pointer;
+  align-items:center;justify-content:center;
+}
+.menu-overlay{
+  display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:99;
+}
+.menu-overlay.show{display:block}
+
+/* ── Main content ── */
+.main{margin-left:72px;flex:1;padding:0;min-width:0}
+
+/* ── Top bar ── */
+.topbar{
+  height:56px;
+  background:rgba(19,34,69,0.9);
+  border-bottom:1px solid var(--border);
+  backdrop-filter:blur(20px);
+  display:flex;align-items:center;justify-content:space-between;
+  padding:0 16px;position:sticky;top:0;z-index:50;
+  gap:8px;
+}
+.topbar-logo{display:flex;align-items:center;gap:8px;flex-shrink:0}
+.topbar-logo img{height:40px;width:auto;display:block}
+.topbar-title{font-family:'Orbitron',monospace;font-size:0.65rem;font-weight:700;color:var(--orange);letter-spacing:0.1em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.search-wrap{display:flex;align-items:center;gap:8px;background:var(--glass);border:1px solid var(--border);border-radius:8px;padding:6px 14px;flex:1;max-width:300px}
+.search-wrap input{background:none;border:none;outline:none;color:var(--white);font-family:'Space Grotesk',sans-serif;font-size:0.85rem;width:100%}
+.search-wrap input::placeholder{color:var(--muted2)}
+.search-icon{color:var(--muted);font-size:0.85rem}
+.topbar-right{display:flex;align-items:center;gap:12px;flex-shrink:0}
+.status-dot{width:8px;height:8px;border-radius:50%;background:var(--green);box-shadow:0 0 8px var(--green);animation:pulse-dot 2s infinite}
+@keyframes pulse-dot{0%,100%{opacity:1}50%{opacity:0.4}}
+
+/* ── Page container ── */
+.page-wrap{padding:16px;max-width:1400px;width:100%}
+.page{display:none}
+.page.active{display:block}
+@keyframes pageSlideIn{
+  from{opacity:0;transform:translateY(12px)}
+  to{opacity:1;transform:translateY(0)}
+}
+.page-header{margin-bottom:16px}
+.page-header h1{font-size:1.1rem;font-weight:700;letter-spacing:0.02em}
+.page-header p{font-size:0.75rem;color:var(--muted);margin-top:2px}
+
+/* ═══════════════════════════════════════════
+   PAGE 1: УЧАСТНИКИ
+═══════════════════════════════════════════ */
+.students-layout{display:grid;grid-template-columns:380px 1fr;gap:16px;min-height:calc(100vh - 120px)}
+@media(max-width:800px){.students-layout{grid-template-columns:1fr}}
+.student-list{display:flex;flex-direction:column;gap:6px;max-height:calc(100vh - 200px);overflow-y:auto;padding-right:4px}
+.student-card{
+  padding:10px 12px;border-radius:var(--r);
+  background:var(--glass);border:1px solid var(--border);
+  cursor:pointer;transition:all 0.2s;display:flex;align-items:center;gap:10px;
+}
+.student-card:hover{border-color:var(--border-h)}
+.student-card.active{border-color:var(--orange);background:var(--orange-dim)}
+.student-avatar{
+  width:32px;height:32px;border-radius:8px;
+  background:linear-gradient(135deg,var(--orange-dim),rgba(237,118,21,0.05));
+  border:1px solid var(--border-h);
+  display:flex;align-items:center;justify-content:center;
+  font-family:'Orbitron',monospace;font-size:0.65rem;font-weight:700;color:var(--orange);flex-shrink:0;
+}
+.student-info{flex:1;min-width:0}
+.student-info strong{display:block;font-size:0.85rem;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.student-info span{font-size:0.65rem;color:var(--muted)}
+.student-score{font-family:'JetBrains Mono',monospace;font-size:0.75rem;color:var(--orange);font-weight:600}
+.quick-view{
+  position:sticky;top:72px;
+  background:var(--glass);border:1px solid var(--border);border-radius:var(--r-lg);
+  padding:16px;backdrop-filter:blur(20px);
+}
+.qv-header{display:flex;align-items:center;gap:10px;margin-bottom:12px;padding-bottom:10px;border-bottom:1px solid var(--border)}
+.qv-avatar{
+  width:40px;height:40px;border-radius:10px;
+  background:linear-gradient(135deg,var(--orange-dim),rgba(237,118,21,0.05));
+  border:1px solid var(--border-h);
+  display:flex;align-items:center;justify-content:center;
+  font-family:'Orbitron',monospace;font-size:0.8rem;font-weight:700;color:var(--orange);
+}
+.qv-name{font-size:0.9rem;font-weight:700}
+.qv-meta{font-size:0.65rem;color:var(--muted);margin-top:2px}
+.qv-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-bottom:12px}
+.qv-stat{background:var(--glass-b);padding:6px;border-radius:8px;text-align:center}
+.qv-stat strong{display:block;font-family:'Orbitron',monospace;font-size:0.8rem;color:var(--orange)}
+.qv-stat span{font-size:0.55rem;color:var(--muted);text-transform:uppercase}
+.qv-actions{display:flex;gap:6px}
+.btn-sm{
+  flex:1;padding:6px;border-radius:8px;
+  background:var(--glass);border:1px solid var(--border);
+  color:var(--white);font-size:0.7rem;cursor:pointer;transition:all 0.2s;
+  font-family:'Space Grotesk',sans-serif;
+}
+.btn-sm:hover{border-color:var(--border-h);background:var(--glass-b)}
+
+/* ── Student form ── */
+.form-card{
+  background:var(--glass);border:1px solid var(--border);border-radius:var(--r-lg);
+  padding:16px;margin-bottom:16px;backdrop-filter:blur(20px);
+}
+.form-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px;margin-bottom:12px}
+.form-group{display:flex;flex-direction:column;gap:4px}
+.form-group label{font-size:0.65rem;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:0.05em}
+.form-input{
+  padding:8px 12px;border-radius:8px;
+  background:var(--bg2);border:1px solid var(--border);
+  color:var(--white);font-family:'Space Grotesk',sans-serif;font-size:0.85rem;
+  outline:none;transition:border-color 0.2s;
+}
+.form-input:focus{border-color:var(--orange)}
+.form-input option{background:var(--bg3)}
+.btn-primary{
+  padding:10px 20px;border-radius:10px;
+  background:var(--orange);color:var(--white);
+  border:none;font-family:'Space Grotesk',sans-serif;font-size:0.85rem;font-weight:600;
+  cursor:pointer;transition:all 0.2s;display:inline-flex;align-items:center;gap:6px;
+}
+.btn-primary:hover{background:#d65a0f;transform:translateY(-1px)}
+.btn-print{
+  padding:8px 16px;border-radius:8px;
+  background:var(--glass);border:1px solid var(--border);
+  color:var(--white);font-size:0.75rem;cursor:pointer;
+  display:inline-flex;align-items:center;gap:6px;margin-bottom:12px;
+  font-family:'Space Grotesk',sans-serif;transition:all 0.2s;
+}
+.btn-print:hover{background:var(--orange-dim)}
+
+/* ═══════════════════════════════════════════
+   PAGE 2: ЗАДАНИЯ (KTP)
+═══════════════════════════════════════════ */
+.task-layout{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+@media(max-width:800px){.task-layout{grid-template-columns:1fr}}
+.day-tabs{display:flex;gap:4px;overflow-x:auto;padding-bottom:4px;margin-bottom:12px}
+.day-tab{
+  padding:6px 12px;border-radius:8px;cursor:pointer;
+  background:var(--glass);border:1px solid var(--border);
+  color:var(--muted);font-size:0.75rem;font-weight:600;white-space:nowrap;transition:all 0.2s;
+}
+.day-tab:hover{border-color:var(--border-h);color:var(--white)}
+.day-tab.active{background:var(--orange-dim);border-color:var(--orange);color:var(--orange)}
+.track-tabs{display:flex;gap:6px;margin-bottom:12px}
+.track-tab{
+  padding:6px 14px;border-radius:20px;cursor:pointer;
+  background:var(--glass);border:1px solid var(--border);
+  color:var(--muted);font-size:0.75rem;font-weight:600;transition:all 0.2s;
+}
+.track-tab:hover{border-color:var(--border-h);color:var(--white)}
+.track-tab.active{background:var(--orange-dim);border-color:var(--orange);color:var(--orange)}
+.task-header{margin-bottom:12px;padding-bottom:10px;border-bottom:1px solid var(--border)}
+.task-day-badge{
+  display:inline-block;padding:2px 10px;border-radius:10px;
+  background:var(--orange-dim);color:var(--orange);
+  font-size:0.65rem;font-weight:700;text-transform:uppercase;margin-bottom:6px;
+}
+.task-title{font-size:1rem;font-weight:700;margin-bottom:4px}
+.task-desc{font-size:0.75rem;color:var(--muted)}
+.task-skills{display:flex;flex-wrap:wrap;gap:4px;margin-top:8px}
+.skill-chip{
+  padding:3px 8px;border-radius:6px;font-size:0.65rem;
+  background:var(--glass-b);border:1px solid var(--border);
+  display:inline-flex;align-items:center;gap:3px;
+}
+.task-form{margin-top:12px}
+.rating-group{margin-bottom:10px}
+.rating-group label{display:block;font-size:0.7rem;font-weight:600;color:var(--muted);margin-bottom:6px;text-transform:uppercase;letter-spacing:0.05em}
+.star-rating{display:flex;gap:4px}
+.star{
+  width:36px;height:36px;border-radius:8px;
+  background:var(--glass);border:1px solid var(--border);
+  color:var(--muted);font-size:0.85rem;font-weight:700;
+  cursor:pointer;transition:all 0.2s;display:flex;align-items:center;justify-content:center;
+}
+.star:hover{background:var(--glass-b);color:var(--white)}
+.star.active{background:var(--orange);border-color:var(--orange);color:var(--white)}
+.toggle-row{display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border);margin-bottom:10px}
+.toggle-wrap{position:relative;width:40px;height:22px}
+.toggle-wrap input{opacity:0;width:0;height:0}
+.toggle-slider{
+  position:absolute;cursor:pointer;inset:0;
+  background:var(--glass-b);border:1px solid var(--border);border-radius:11px;transition:all 0.3s;
+}
+.toggle-slider::before{
+  content:'';position:absolute;height:16px;width:16px;left:2px;bottom:2px;
+  background:var(--muted);border-radius:50%;transition:all 0.3s;
+}
+.toggle-wrap input:checked + .toggle-slider{background:var(--orange)}
+.toggle-wrap input:checked + .toggle-slider::before{transform:translateX(18px);background:var(--white)}
+textarea{
+  width:100%;padding:8px 12px;border-radius:8px;min-height:60px;
+  background:var(--bg2);border:1px solid var(--border);
+  color:var(--white);font-family:'Space Grotesk',sans-serif;font-size:0.8rem;
+  outline:none;resize:vertical;transition:border-color 0.2s;
+}
+textarea:focus{border-color:var(--orange)}
+
+/* ═══════════════════════════════════════════
+   PAGE 3: ДОСТИЖЕНИЯ
+═══════════════════════════════════════════ */
+.badge-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:10px}
+.badge-card{
+  padding:12px;border-radius:var(--r);
+  background:var(--glass);border:1px solid var(--border);
+  text-align:center;transition:all 0.3s;position:relative;overflow:hidden;
+}
+.badge-card.earned{border-color:var(--orange)}
+.badge-card .badge-icon{font-size:1.5rem;margin-bottom:6px;display:block}
+.badge-card .badge-name{font-size:0.7rem;font-weight:600;display:block;margin-bottom:2px}
+.badge-card .badge-desc{font-size:0.6rem;color:var(--muted);line-height:1.3}
+.rarity-common{border-left:3px solid #6b7280}.rarity-rare{border-left:3px solid #3b82f6}
+.rarity-epic{border-left:3px solid #8b5cf6}.rarity-legendary{border-left:3px solid #fbbf24}
+.badge-count{font-family:'Orbitron',monospace;font-size:0.85rem;color:var(--orange);font-weight:700}
+.ach-summary{display:flex;justify-content:space-between;align-items:center;padding:12px;background:var(--glass);border:1px solid var(--border);border-radius:var(--r);margin-bottom:12px}
+.ach-summary strong{font-size:0.85rem}.ach-summary span{font-size:0.7rem;color:var(--muted)}
+
+/* ═══════════════════════════════════════════
+   PAGE 4: ТАЛАНТЫ (Рекомендации)
+═══════════════════════════════════════════ */
+.talent-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+@media(max-width:800px){.talent-grid{grid-template-columns:1fr}}
+.gc{
+  background:var(--glass);border:1px solid var(--border);border-radius:var(--r);
+  padding:16px;backdrop-filter:blur(20px);
+}
+.gc h3{font-size:0.9rem;font-weight:700;margin-bottom:10px;display:flex;align-items:center;gap:6px}
+.radar-wrap{width:100%;max-width:300px;margin:0 auto;aspect-ratio:1}
+.comp-bars{display:flex;flex-direction:column;gap:4px}
+.comp-bar-row{display:flex;align-items:center;gap:8px}
+.comp-bar-label{font-size:0.65rem;color:var(--muted);width:120px;flex-shrink:0;display:flex;align-items:center;gap:3px}
+.comp-bar-track{flex:1;height:6px;background:var(--glass-b);border-radius:3px;overflow:hidden}
+.comp-bar-fill{height:100%;border-radius:3px;transition:width 0.6s ease}
+.disc-bars{display:flex;flex-direction:column;gap:6px}
+.disc-bar-row{display:flex;align-items:center;gap:8px}
+.disc-label{font-size:0.7rem;width:24px;font-weight:700}
+.disc-track{flex:1;height:8px;background:var(--glass-b);border-radius:4px;overflow:hidden}
+.disc-fill{height:100%;border-radius:4px;transition:width 0.6s ease}
+.disc-combo{margin-top:12px;padding:10px;background:var(--glass-b);border-radius:var(--r);border:1px solid var(--border)}
+.disc-combo strong{display:block;font-size:0.8rem;margin-bottom:2px}
+.disc-combo p{font-size:0.65rem;color:var(--muted);margin:0}
+.recommendation-card{
+  padding:12px;border-radius:var(--r);border:1px solid var(--border);
+  background:var(--glass);margin-bottom:8px;transition:all 0.3s;
+}
+.recommendation-card.rarity-high{border-color:var(--orange);background:var(--orange-dim)}
+.recommendation-card.rarity-medium{border-color:rgba(59,130,246,0.4)}
+.recommendation-card.rarity-low{border-color:rgba(107,114,128,0.4)}
+.rec-header{display:flex;align-items:flex-start;gap:10px;margin-bottom:8px}
+.rec-icon{font-size:1.2rem}
+.rec-info{flex:1}
+.rec-info strong{display:block;font-size:0.85rem}
+.rec-info p{font-size:0.65rem;color:var(--muted);margin:2px 0 0}
+.rec-score{text-align:right}
+.rec-pct{display:block;font-family:'Orbitron',monospace;font-size:1rem;color:var(--orange);font-weight:700}
+.rec-level{font-size:0.55rem;color:var(--muted)}
+.rec-comments{font-size:0.65rem;color:var(--muted)}
+.rec-comment{margin-bottom:2px;padding-left:8px;border-left:2px solid var(--border)}
+.obs-list{display:flex;flex-direction:column;gap:4px}
+.obs-row{
+  display:flex;align-items:center;gap:8px;padding:6px 8px;
+  background:var(--glass-b);border-radius:8px;font-size:0.75rem;
+}
+.obs-icon{font-size:1rem;flex-shrink:0}
+.obs-info{font-size:0.7rem;flex:1;min-width:0}
+.obs-scores{display:flex;gap:6px;flex-shrink:0;font-size:0.65rem;color:var(--muted)}
+.init-chip{background:var(--orange-dim);color:var(--orange);padding:2px 6px;border-radius:4px;font-size:0.6rem;font-weight:600}
+.talent-badge-row{
+  display:flex;align-items:center;gap:8px;padding:8px;
+  background:var(--glass-b);border-radius:8px;margin-bottom:4px;
+}
+.tbr-icon{font-size:1.2rem;flex-shrink:0}
+.tbr-rarity{font-size:0.6rem;padding:2px 6px;border-radius:4px;font-weight:600}
+.mini-badge{font-size:1rem;display:inline-block;margin:0 2px}
+
+/* ═══════════════════════════════════════════
+   PAGE 5: ДАШБОРД
+═══════════════════════════════════════════ */
+.stats-row{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px}
+@media(max-width:800px){.stats-row{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:400px){.stats-row{grid-template-columns:1fr}}
+.stat-block{
+  padding:16px;border-radius:var(--r);
+  background:var(--glass);border:1px solid var(--border);
+}
+.stat-block-num{font-family:'Orbitron',monospace;font-size:1.5rem;font-weight:700;color:var(--orange);margin-bottom:2px}
+.stat-block-label{font-size:0.7rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.06em}
+
+.filter-row{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:16px;align-items:center}
+.filter-label{font-size:0.7rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.06em;margin-right:4px;flex-shrink:0}
+.filter-pill{
+  padding:6px 14px;border-radius:20px;cursor:pointer;
+  background:var(--glass);border:1px solid var(--border);
+  color:var(--muted);font-size:0.75rem;font-weight:600;transition:all 0.2s;
+}
+.filter-pill:hover{border-color:var(--border-h);color:var(--white)}
+.filter-pill.active{background:var(--orange-dim);border-color:var(--orange);color:var(--orange)}
+
+.db-student-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:12px}
+.db-student-card{
+  padding:14px;border-radius:var(--r);
+  background:var(--glass);border:1px solid var(--border);
+  cursor:pointer;transition:all 0.25s;
+}
+.db-student-card:hover{border-color:var(--border-h);transform:translateY(-2px)}
+.db-sc-top{display:flex;align-items:center;gap:10px;margin-bottom:10px}
+.db-sc-avatar{
+  width:36px;height:36px;border-radius:8px;
+  background:linear-gradient(135deg,var(--orange-dim),rgba(237,118,21,0.05));
+  border:1px solid var(--border-h);
+  display:flex;align-items:center;justify-content:center;
+  font-family:'Orbitron',monospace;font-size:0.75rem;font-weight:700;color:var(--orange);flex-shrink:0;
+}
+.db-sc-info{flex:1;min-width:0}
+.db-sc-info strong{display:block;font-size:0.85rem;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--white)}
+.db-sc-info span{font-size:0.7rem;color:var(--muted)}
+.db-sc-track{font-size:1.2rem}
+.db-sc-progress{display:flex;align-items:center;gap:8px;margin-bottom:8px}
+.db-sc-bar{flex:1;height:4px;border-radius:2px;background:var(--glass-b);overflow:hidden}
+.db-sc-bar div{height:100%;border-radius:2px;background:linear-gradient(90deg,var(--orange),#d65a0f);transition:width 0.6s}
+.db-sc-bar + span{font-size:0.65rem;color:var(--muted);font-family:'JetBrains Mono',monospace}
+.db-sc-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-bottom:8px;text-align:center}
+.db-sc-stats div{padding:6px;border-radius:6px;background:var(--glass-b)}
+.db-sc-stats span{display:block;font-family:'Orbitron',monospace;font-size:0.85rem;font-weight:700;color:var(--orange)}
+.db-sc-stats small{font-size:0.6rem;color:var(--muted)}
+.db-sc-badges{display:flex;gap:4px;flex-wrap:wrap}
+.db-sc-badges span{font-size:0.9rem}
+
+/* ── Toast ── */
+#toast-container{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);z-index:8000;display:flex;flex-direction:column;gap:8px;align-items:center;width:90%;max-width:400px}
+.toast{
+  padding:10px 20px;border-radius:8px;
+  background:rgba(19,34,69,0.95);border:1px solid var(--border);
+  backdrop-filter:blur(20px);font-size:0.85rem;font-weight:600;
+  opacity:0;transform:translateY(10px);transition:all 0.3s;pointer-events:none;width:100%;text-align:center;
+}
+.toast.show{opacity:1;transform:translateY(0)}
+.toast.success{border-color:rgba(34,211,166,0.4);color:#22d3a6}
+.toast.warn{border-color:rgba(251,191,36,0.4);color:#fbbf24}
+
+/* ── Student select ── */
+.student-selector{
+  width:100%;padding:10px 14px;border-radius:10px;
+  background:var(--glass);border:1px solid var(--border);
+  color:var(--white);font-family:'Space Grotesk',sans-serif;font-size:0.85rem;
+  outline:none;appearance:none;cursor:pointer;
+  transition:border-color 0.2s;margin-bottom:14px;
+}
+.student-selector:focus{border-color:var(--orange)}
+.student-selector option{background:var(--bg3)}
+
+/* ═══════════════════════════════════════════
+   PRINT
+═══════════════════════════════════════════ */
+@media print{
+  @page{size:A4 portrait;margin:8mm}
+  .sidebar,.topbar,.btn-print,.mobile-menu-toggle{display:none!important}
+  .main{margin-left:0}
+  body,html{background:#fff!important;color:#000!important}
+  .gc{background:#f8f9fa!important;border:1px solid #ddd!important;color:#000!important}
+  .talent-grid{display:block}
+  .talent-grid .gc{margin-bottom:12px;break-inside:avoid}
+  canvas#radar-canvas{filter:invert(1)}
+  *{-webkit-text-fill-color:initial!important;color:#000!important}
+}
+
+/* ═══════════════════════════════════════════
+   MOBILE RESPONSIVE
+═══════════════════════════════════════════ */
+@media(max-width:768px){
+  html{font-size:14px}
+  .mobile-menu-toggle{display:flex}
+  .sidebar{
+    transform:translateX(-100%);
+    width:240px;
+    background:rgba(19,34,69,0.98);
+  }
+  .sidebar.open{transform:translateX(0)}
+  .main{margin-left:0}
+  .nav-item span{display:none}
+  .sidebar-logo{font-size:0.45rem}
+  .page-wrap{padding:12px}
+  .talent-grid{grid-template-columns:1fr}
+  .stats-row{grid-template-columns:repeat(2,1fr)!important}
+  .db-student-grid{grid-template-columns:1fr!important}
+  .badge-grid{grid-template-columns:repeat(auto-fill,minmax(100px,1fr))!important}
+  .form-grid{grid-template-columns:1fr!important}
+}
+@media(max-width:480px){
+  html{font-size:13px}
+  .topbar{padding:0 8px}
+  .search-wrap{display:none}
+  .stats-row{grid-template-columns:1fr!important}
+  .day-tabs{font-size:0.65rem}
+  .day-tab{padding:4px 8px}
+}
+</style>
+</head>
+<body>
+
+<div id="app-loader">
+  <div class="loader-ring"></div>
+  <div class="loader-text">ONE! Summer Game 2026</div>
+</div>
+
+<div class="app-shell">
+  <!-- ── SIDEBAR ── -->
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-logo">ONE!<br>SG<br>2026</div>
+    <button class="nav-item active" data-page="students" title="Участники">👥<span>Люди</span></button>
+    <button class="nav-item" data-page="tasks"    title="Задания">📋<span>КТП</span></button>
+    <button class="nav-item" data-page="achievements" title="Достижения">🏅<span>Баджи</span></button>
+    <button class="nav-item" data-page="talents"  title="Таланты">🎯<span>Таланты</span></button>
+    <button class="nav-item" data-page="dashboard" title="Дашборд">📊<span>Стат</span></button>
+    <button class="nav-item" data-page="camp" title="О лагере">🏕️<span>Лаг</span></button>
+    <div class="nav-spacer"></div>
+  </aside>
+
+  <!-- Mobile overlay -->
+  <div class="menu-overlay" onclick="toggleMobileMenu()"></div>
+
+  <!-- ── MAIN ── -->
+  <main class="main">
+    <div class="topbar">
+      <button class="mobile-menu-toggle" onclick="toggleMobileMenu()">☰</button>
+      <div class="topbar-logo">
+        <img src="logo.png" alt="ONE! Summer Game 2026" onerror="this.style.display='none'">
+      </div>
+      <div class="topbar-title">ONE! SUMMER GAME 2026</div>
+      <div class="search-wrap">
+        <span class="search-icon">🔍</span>
+        <input type="text" id="search-input" placeholder="Поиск участников...">
+      </div>
+      <div class="topbar-right">
+        <div class="status-dot"></div>
+      </div>
+    </div>
+
+    <!-- PAGE 1: УЧАСТНИКИ -->
+    <div class="page active" id="page-students">
+      <div class="page-wrap">
+        <div class="page-header">
+          <h1>👥 УЧАСТНИКИ</h1>
+          <p>Регистрация и управление профилями</p>
+        </div>
+        <button class="btn-print" onclick="window.print()">🖨️ Распечатать / Сохранить PDF</button>
+
+        <div class="form-card">
+          <h3 style="font-size:0.85rem;margin-bottom:12px">➕ Новый участник</h3>
+          <form id="student-form">
+            <div class="form-grid">
+              <div class="form-group"><label>Имя</label><input class="form-input" id="s-firstname" required placeholder="Имя"></div>
+              <div class="form-group"><label>Фамилия</label><input class="form-input" id="s-lastname" required placeholder="Фамилия"></div>
+              <div class="form-group"><label>Возраст</label><input class="form-input" id="s-age" type="number" min="7" max="12" required placeholder="7-12"></div>
+              <div class="form-group"><label>Пол</label>
+                <select class="form-input" id="s-gender" required>
+                  <option value="">Выбрать...</option>
+                  <option value="Мужской">Мужской</option>
+                  <option value="Женский">Женский</option>
+                </select>
+              </div>
+              <div class="form-group"><label>Класс</label><input class="form-input" id="s-grade" type="number" min="1" max="11" required placeholder="Класс"></div>
+              <div class="form-group"><label>Отряд</label>
+                <select class="form-input" id="s-squad" required>
+                  <option value="">Выбрать...</option>
+                  <option value="1">Отряд 1</option><option value="2">Отряд 2</option>
+                  <option value="3">Отряд 3</option><option value="4">Отряд 4</option>
+                  <option value="5">Отряд 5</option><option value="6">Отряд 6</option>
+                  <option value="7">Отряд 7</option><option value="8">Отряд 8</option>
+                </select>
+              </div>
+              <div class="form-group"><label>Смена</label>
+                <select class="form-input" id="s-shift" required>
+                  <option value="">Выбрать...</option>
+                  <option value="1">Смена 1</option><option value="2">Смена 2</option>
+                  <option value="3">Смена 3</option><option value="4">Смена 4</option>
+                  <option value="5">Смена 5</option><option value="6">Смена 6</option>
+                </select>
+              </div>
+            </div>
+            <div class="form-group" style="margin-top:8px">
+              <label>Заметки</label>
+              <textarea class="form-input" id="s-notes" rows="2" placeholder="Дополнительная информация..."></textarea>
+            </div>
+            <button class="btn-primary" type="submit">✅ Добавить участника</button>
+          </form>
+        </div>
+
+        <div class="students-layout">
+          <div>
+            <h3 style="font-size:0.85rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:12px">
+              📋 Список участников (<span id="student-count">0</span>)
+            </h3>
+            <div class="student-list" id="student-list"></div>
+          </div>
+          <div class="quick-view" id="quick-view" style="display:none">
+            <div class="qv-header">
+              <div class="qv-avatar" id="qv-avatar">--</div>
+              <div>
+                <div class="qv-name" id="qv-name">--</div>
+                <div class="qv-meta" id="qv-meta">--</div>
+              </div>
+            </div>
+            <div class="qv-stats">
+              <div class="qv-stat"><strong id="qv-obs">0</strong><span>Занятий</span></div>
+              <div class="qv-stat"><strong id="qv-badges">0</strong><span>Баджи</span></div>
+              <div class="qv-stat"><strong id="qv-score">-.-</strong><span>Балл</span></div>
+            </div>
+            <div class="qv-actions">
+              <button class="btn-sm" onclick="openStudentTalents(state.currentStudentId)">🎯 Таланты</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- PAGE 2: ЗАДАНИЯ -->
+    <div class="page" id="page-tasks">
+      <div class="page-wrap">
+        <div class="page-header">
+          <h1>📋 ЗАДАНИЯ (КТП)</h1>
+          <p>10 дней × 3 трека — образовательная игра-стратегия</p>
+        </div>
+        <button class="btn-print" onclick="window.print()">🖨️ Распечатать / Сохранить PDF</button>
+
+        <div style="margin-bottom:12px">
+          <label style="font-size:0.7rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:6px;display:block">Участник</label>
+          <select class="student-selector" id="task-student-select">
+            <option value="">— Выбрать участника —</option>
+          </select>
+        </div>
+
+        <div class="track-tabs">
+          <div class="track-tab active" onclick="selectTrack('bio')">🧬 Био</div>
+          <div class="track-tab" onclick="selectTrack('eng')">⚙️ Инж</div>
+          <div class="track-tab" onclick="selectTrack('media')">🎥 Медиа</div>
+        </div>
+
+        <div class="task-layout">
+          <div>
+            <div class="day-tabs" id="day-tabs"></div>
+            <div id="task-detail"></div>
+          </div>
+          <div class="gc">
+            <h3 style="font-size:0.85rem;margin-bottom:8px">📝 Заметки вожатого</h3>
+            <div id="task-notes-list" class="obs-list"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- PAGE 3: ДОСТИЖЕНИЯ -->
+    <div class="page" id="page-achievements">
+      <div class="page-wrap">
+        <div class="page-header">
+          <h1>🏅 ДОСТИЖЕНИЯ</h1>
+          <p>Автоматическое начисление баджей</p>
+        </div>
+        <button class="btn-print" onclick="window.print()">🖨️ Распечатать / Сохранить PDF</button>
+
+        <div style="margin-bottom:12px">
+          <label style="font-size:0.7rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:6px;display:block">Участник</label>
+          <select class="student-selector" id="ach-student-select">
+            <option value="">— Выбрать участника —</option>
+          </select>
+        </div>
+
+        <div class="ach-summary" id="ach-summary">
+          <div><strong id="ach-count">0</strong> <span>из <span id="ach-total">9</span> значков получено</span></div>
+        </div>
+
+        <div class="badge-grid" id="badge-grid"></div>
+      </div>
+    </div>
+
+    <!-- PAGE 4: ТАЛАНТЫ -->
+    <div class="page" id="page-talents">
+      <div class="page-wrap">
+        <div class="page-header">
+          <h1>🎯 ТАЛАНТЫ</h1>
+          <p>Персональные рекомендации и профиль компетенций</p>
+        </div>
+        <button class="btn-print" onclick="window.print()">🖨️ Распечатать / Сохранить PDF</button>
+
+        <div style="margin-bottom:12px">
+          <label style="font-size:0.7rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:6px;display:block">Участник</label>
+          <select class="student-selector" id="talent-student-select">
+            <option value="">— Выбрать участника —</option>
+          </select>
+        </div>
+
+        <div class="talent-grid">
+          <div class="gc">
+            <h3>👤 <span id="talent-name">--</span></h3>
+            <p style="font-size:0.7rem;color:var(--muted);margin-bottom:12px" id="talent-meta">--</p>
+            <div id="talent-top-badges" style="margin-bottom:12px"></div>
+            <h3>📊 Радар компетенций</h3>
+            <div class="radar-wrap"><canvas id="radar-canvas" width="300" height="300"></canvas></div>
+            <h3 style="margin-top:16px">📈 Шкала компетенций</h3>
+            <div class="comp-bars" id="comp-bars"></div>
+          </div>
+          <div>
+            <div class="gc" style="margin-bottom:12px">
+              <h3>🧩 DISC-профиль</h3>
+              <div class="disc-bars" id="disc-bars"></div>
+              <div class="disc-combo" id="disc-combo"></div>
+            </div>
+            <div class="gc" style="margin-bottom:12px">
+              <h3>💼 Рекомендации по профессии</h3>
+              <div id="recommendations-content"></div>
+            </div>
+            <div class="gc">
+              <h3>⭐ Полученные значки</h3>
+              <div id="talent-badges-list"></div>
+            </div>
+            <div class="gc">
+              <h3>📝 История наблюдений</h3>
+              <div class="obs-list" id="talent-obs-list"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- PAGE 5: ДАШБОРД -->
+    <div class="page" id="page-dashboard">
+      <div class="page-wrap">
+        <div class="page-header">
+          <h1>📊 ДАШБОРД ОТРЯДА</h1>
+          <p>Сводная статистика по лагерю</p>
+        </div>
+        <button class="btn-print" onclick="window.print()">🖨️ Распечатать / Сохранить PDF</button>
+
+        <div class="stats-row">
+          <div class="stat-block"><div class="stat-block-num" id="db-total">0</div><div class="stat-block-label">Участников</div></div>
+          <div class="stat-block"><div class="stat-block-num" id="db-tasks">0</div><div class="stat-block-label">Занятий</div></div>
+          <div class="stat-block"><div class="stat-block-num" id="db-badges">0</div><div class="stat-block-label">Достижений</div></div>
+          <div class="stat-block"><div class="stat-block-num" id="db-avg">—</div><div class="stat-block-label">Средний балл</div></div>
+        </div>
+
+        <div class="gc">
+          <h2>Фильтры</h2>
+          <div class="filter-row">
+            <span class="filter-label">Отряд:</span>
+            <button class="filter-pill active" data-filter="squad" data-val="" onclick="setFilter('squad','')">Все</button>
+            <button class="filter-pill" data-filter="squad" data-val="1" onclick="setFilter('squad','1')">Отряд 1</button>
+            <button class="filter-pill" data-filter="squad" data-val="2" onclick="setFilter('squad','2')">Отряд 2</button>
+            <button class="filter-pill" data-filter="squad" data-val="3" onclick="setFilter('squad','3')">Отряд 3</button>
+            <button class="filter-pill" data-filter="squad" data-val="4" onclick="setFilter('squad','4')">Отряд 4</button>
+            <button class="filter-pill" data-filter="squad" data-val="5" onclick="setFilter('squad','5')">Отряд 5</button>
+            <button class="filter-pill" data-filter="squad" data-val="6" onclick="setFilter('squad','6')">Отряд 6</button>
+            <button class="filter-pill" data-filter="squad" data-val="7" onclick="setFilter('squad','7')">Отряд 7</button>
+            <button class="filter-pill" data-filter="squad" data-val="8" onclick="setFilter('squad','8')">Отряд 8</button>
+          </div>
+          <div class="filter-row">
+            <span class="filter-label">Смена:</span>
+            <button class="filter-pill active" data-filter="shift" data-val="" onclick="setFilter('shift','')">Все</button>
+            <button class="filter-pill" data-filter="shift" data-val="1" onclick="setFilter('shift','1')">Смена 1</button>
+            <button class="filter-pill" data-filter="shift" data-val="2" onclick="setFilter('shift','2')">Смена 2</button>
+            <button class="filter-pill" data-filter="shift" data-val="3" onclick="setFilter('shift','3')">Смена 3</button>
+            <button class="filter-pill" data-filter="shift" data-val="4" onclick="setFilter('shift','4')">Смена 4</button>
+            <button class="filter-pill" data-filter="shift" data-val="5" onclick="setFilter('shift','5')">Смена 5</button>
+            <button class="filter-pill" data-filter="shift" data-val="6" onclick="setFilter('shift','6')">Смена 6</button>
+          </div>
+        </div>
+
+        <div class="db-student-grid" id="db-student-grid"></div>
+      </div>
+    </div>
+
+    <!-- PAGE 6: О ЛАГЕРЕ -->
+    <div class="page" id="page-camp">
+      <div class="page-wrap">
+        <div class="page-header">
+          <h1>🏕️ О ЛАГЕРЕ</h1>
+          <p>Концепция, активности и команда ONE! Summer Game 2026</p>
+        </div>
+        <button class="btn-print" onclick="window.print()">🖨️ Распечатать / Сохранить PDF</button>
+
+        <div class="gc" style="margin-bottom:16px">
+          <h3 style="font-size:0.85rem;color:var(--orange);margin-bottom:8px">🧩 Концепт лагеря</h3>
+          <p style="font-size:0.8rem;color:var(--muted);line-height:1.5">
+            Образовательная игра-стратегия с погружением в профессии для детей и подростков 7–12 лет.
+            За 10 дней ребёнок пробует себя в трёх направлениях: инженерия, биотехнологии и медиа.
+            После прохождения ребёнок понимает, насколько ему близки эти сферы.
+            Лагерь проводится совместно с экспертами ONE! International School. Играют каждое лето с 2018 года.
+          </p>
+        </div>
+
+        <div class="gc" style="margin-bottom:16px">
+          <h3 style="font-size:0.85rem;color:var(--orange);margin-bottom:8px">📅 Даты и формат</h3>
+          <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px">
+            <div style="font-size:0.75rem;color:var(--muted)"><strong style="color:var(--white)">Длительность:</strong><br>10 дней</div>
+            <div style="font-size:0.75rem;color:var(--muted)"><strong style="color:var(--white)">Смена:</strong><br>с 3 августа по 12 августа 2026</div>
+            <div style="font-size:0.75rem;color:var(--muted)"><strong style="color:var(--white)">Возраст:</strong><br>7–12 лет</div>
+            <div style="font-size:0.75rem;color:var(--muted)"><strong style="color:var(--white)">Лимит:</strong><br>не более 50 участников</div>
+          </div>
+        </div>
+
+        <div id="camp-tracks" class="gc" style="margin-bottom:16px"></div>
+        <div id="camp-clubs" class="gc" style="margin-bottom:16px"></div>
+        <div id="camp-activities" class="gc" style="margin-bottom:16px"></div>
+        <div id="camp-english" class="gc" style="margin-bottom:16px"></div>
+        <div id="camp-team" class="gc" style="margin-bottom:16px"></div>
+
+        <div class="gc">
+          <h3 style="font-size:0.85rem;color:var(--orange);margin-bottom:8px">🏠 Инфраструктура и быт</h3>
+          <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px">
+            <div style="font-size:0.75rem;color:var(--muted)"><strong style="color:var(--white)">Питание:</strong><br>5-разовое, система шведский стол</div>
+            <div style="font-size:0.75rem;color:var(--muted)"><strong style="color:var(--white)">Территория:</strong><br>Охраняемая, 22 гектара лесопарковой зоны</div>
+            <div style="font-size:0.75rem;color:var(--muted)"><strong style="color:var(--white)">Объекты:</strong><br>Спортзал, Аквацентр, Верёвочный парк</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<!-- SCRIPTS -->
+<script src="js/config.js"></script>
+<script src="js/api.js"></script>
+<script>
+window.onerror = function(msg, url, line, col, error) {
+  var el = document.createElement('div');
+  el.style.cssText = 'background:#ef4444;color:#fff;padding:10px;font-size:12px;font-family:monospace;position:fixed;top:0;left:0;right:0;z-index:99999';
+  el.textContent = 'JS Error: ' + msg + ' (line ' + line + ')';
+  document.body.appendChild(el);
+};
+</script>
+<script src="js/app.js"></script>
+
+<!-- Mobile menu script -->
+<script>
+  function toggleMobileMenu() {
+    var sidebar = document.getElementById('sidebar');
+    var overlay = document.querySelector('.menu-overlay');
+    sidebar.classList.toggle('open');
+    overlay.classList.toggle('show');
+  }
+
+  // Close menu on nav click (mobile)
+  document.querySelectorAll('.nav-item').forEach(function(btn) {
+    btn.addEventListener('click', function() {
+      if (window.innerWidth <= 768) toggleMobileMenu();
+    });
+  });
+
+  // Responsive sidebar collapse
+  window.addEventListener('resize', function() {
+    var sl = document.getElementById('students-layout');
+    if (!sl) return;
+    sl.style.gridTemplateColumns = window.innerWidth < 800 ? '1fr' : '380px 1fr';
+  });
+  window.dispatchEvent(new Event('resize'));
+</script>
+</body>
+</html>
