@@ -2,5 +2,5 @@
 //  ONE! Summer Game 2026 — КОНФИГУРАЦИЯ SUPABASE
 // ═════════════════════════════════════════════
 
-const SUPABASE_URL = 'https://YOUR-PROJECT-REF.supabase.co'; // < YOUR PROJECT URL
-const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIs...'; // < YOUR ANON KEY
+const SUPABASE_URL = 'https://xzmxxnhyvbzdebqhomzd.supabase.co'; // < YOUR PROJECT URL
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inh6bXh4bmh5dmJ6ZGVicWhvbXpkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzgyNTEzNzMsImV4cCI6MjA5MzgyNzM3M30.xAKnz6ijF8H1PNHFKVjrLyD264OHCgowkPgd2DqWF18'; // < YOUR ANON KEY
