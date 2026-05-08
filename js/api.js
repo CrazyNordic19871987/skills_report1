@@ -1,6 +1,6 @@
-// ═══════════════════════════════════════════════
+// ════════════════════════════════════════════
 //  АМАКС 2 — API СЛОЙ (Supabase REST)
-// ═══════════════════════════════════════════════
+// ════════════════════════════════════════════
 
 class AmaksAPI {
   constructor() {
@@ -13,10 +13,21 @@ class AmaksAPI {
     };
   }
 
-  async _req(url, opts = {}) {
+  async _req(url, opts) {
+    const options = opts || {};
+    const headers = {};
+    // Merge default headers with request headers
+    for (var k in this.h) headers[k] = this.h[k];
+    if (options.headers) {
+      for (var k2 in options.headers) headers[k2] = options.headers[k2];
+    }
     try {
-      const r = await fetch(url, { ...opts, headers: { ...this.h, ...(opts.headers || {}) } });
-      if (!r.ok) throw new Error(`HTTP ${r.status}`);
+      const r = await fetch(url, {
+        method: options.method || 'GET',
+        headers: headers,
+        body: options.body
+      });
+      if (!r.ok) throw new Error('HTTP ' + r.status);
       const text = await r.text();
       return text ? JSON.parse(text) : [];
     } catch(e) {
@@ -25,41 +36,49 @@ class AmaksAPI {
     }
   }
 
-  async getAll(table, filter = '') {
-    let url = `${this.base}/${table}?select=*&order=created_at.desc`;
+  async getAll(table, filter) {
+    var url = this.base + '/' + table + '?select=*&order=created_at.desc';
     if (filter) url += '&' + filter;
     return await this._req(url) || [];
   }
 
   async insert(table, data) {
-    return await this._req(`${this.base}/${table}`, {
-      method: 'POST', body: JSON.stringify(data)
+    return await this._req(this.base + '/' + table, {
+      method: 'POST',
+      body: JSON.stringify(data)
     });
   }
 
   async update(table, id, data) {
-    return await this._req(`${this.base}/${table}?id=eq.${id}`, {
-      method: 'PATCH', body: JSON.stringify(data)
+    return await this._req(this.base + '/' + table + '?id=eq.' + id, {
+      method: 'PATCH',
+      body: JSON.stringify(data)
     });
   }
 
   async upsert(table, data) {
-    return await this._req(`${this.base}/${table}`, {
+    return await this._req(this.base + '/' + table, {
       method: 'POST',
-      headers: { ...this.h, 'Prefer': 'return=representation,resolution=merge-duplicates' },
+      headers: { 'Prefer': 'return=representation,resolution=merge-duplicates' },
       body: JSON.stringify(data)
     });
   }
 
   async remove(table, id) {
-    return await this._req(`${this.base}/${table}?id=eq.${id}`, { method: 'DELETE' });
+    return await this._req(this.base + '/' + table + '?id=eq.' + id, {
+      method: 'DELETE'
+    });
   }
 }
 
 const api = new AmaksAPI();
 
-// ── Локальное хранилище (fallback) ──────────
+// ── Локальное хранилище (fallback) ─────────
 const LS = {
-  get: (k) => { try { return JSON.parse(localStorage.getItem('amaks2_' + k) || '[]'); } catch{ return []; } },
-  set: (k, v) => { try { localStorage.setItem('amaks2_' + k, JSON.stringify(v)); } catch{} }
+  get: function(k) {
+    try { return JSON.parse(localStorage.getItem('amaks2_' + k) || '[]'); } catch(e) { return []; }
+  },
+  set: function(k, v) {
+    try { localStorage.setItem('amaks2_' + k, JSON.stringify(v)); } catch(e) {}
+  }
 };
