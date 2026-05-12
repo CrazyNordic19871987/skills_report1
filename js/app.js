@@ -97,6 +97,7 @@ function navigateTo(page) {
 
 function animatePageIn(page) {
   const el = document.getElementById('page-' + page);
+  if (!el) return;
   el.style.animation = 'none';
   el.offsetHeight; // reflow
   el.style.animation = 'pageSlideIn 0.45s cubic-bezier(0.22,1,0.36,1) forwards';
