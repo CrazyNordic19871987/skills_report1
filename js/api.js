@@ -16,10 +16,9 @@ class AmaksAPI {
   async _req(url, opts) {
     const options = opts || {};
     const headers = {};
-    // Merge default headers with request headers
-    for (var k in this.h) headers[k] = this.h[k];
+    for (const k in this.h) headers[k] = this.h[k];
     if (options.headers) {
-      for (var k2 in options.headers) headers[k2] = options.headers[k2];
+      for (const k2 in options.headers) headers[k2] = options.headers[k2];
     }
     try {
       const r = await fetch(url, {
@@ -37,8 +36,7 @@ class AmaksAPI {
   }
 
   async getAll(table, filter) {
-    var url = this.base + '/' + table + '?select=*&order=created_at.desc';
-    if (filter) url += '&' + filter;
+    const url = this.base + '/' + table + '?select=*&order=created_at.desc';
     return await this._req(url) || [];
   }
 
