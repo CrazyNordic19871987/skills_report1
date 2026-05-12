@@ -868,7 +868,7 @@ window.onerror = function(msg, url, line, col, error) {
 
   // Responsive sidebar collapse
   window.addEventListener('resize', function() {
-    var sl = document.getElementById('students-layout');
+    var sl = document.querySelector('.students-layout');
     if (!sl) return;
     sl.style.gridTemplateColumns = window.innerWidth < 800 ? '1fr' : '380px 1fr';
   });
