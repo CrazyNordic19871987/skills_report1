@@ -247,6 +247,7 @@ function onTaskStudentChange() {
 
 function renderDayTabs() {
   const el = document.getElementById('day-tabs');
+  if (!el) return;
   el.innerHTML = Array.from({length:10}, (_,i) => {
     const day = i+1;
     const done = hasObservation(state.currentStudentId, day, state.currentTrack);
@@ -437,27 +438,32 @@ function onAchStudentChange() {
 function renderAchievements(studentId) {
   const earned = state.badges.filter(b => b.student_id === studentId && b.earned);
   const earnedIds = new Set(earned.map(b => b.badge_id));
-  const el = document.getElementById('badge-grid');
   const rarityOrder = { legendary:0, epic:1, rare:2, common:3 };
+  var badgeGrid = document.getElementById('badge-grid');
+  var achSummary = document.getElementById('ach-summary');
 
-  el.innerHTML = BADGE_DEFS
-    .sort((a,b) => rarityOrder[a.rarity] - rarityOrder[b.rarity])
-    .map(def => {
-      const isEarned = earnedIds.has(def.id);
-      const earnedObj = earned.find(b => b.badge_id === def.id);
-      const dateStr = earnedObj?.earned_at ? new Date(earnedObj.earned_at).toLocaleDateString('ru') : '';
-      return `
-        <div class="badge-card ${isEarned ? 'earned' : 'locked'} rarity-${def.rarity}">
-          <div class="badge-glow"></div>
-          <div class="badge-emoji">${isEarned ? def.icon : '??'}</div>
-          <div class="badge-name">${def.name}</div>
-          <div class="badge-desc">${def.desc}</div>
-          <div class="badge-rarity">${rarityLabel(def.rarity)}</div>
-          ${isEarned ? `<div class="badge-date">${dateStr}</div>` : ''}
-        </div>`;
-    }).join('');
-
-  document.getElementById('ach-summary').innerHTML =
+  if (badgeGrid) {
+    badgeGrid.innerHTML = BADGE_DEFS
+      .sort((a,b) => rarityOrder[a.rarity] - rarityOrder[b.rarity])
+      .map(def => {
+        const isEarned = earnedIds.has(def.id);
+        const earnedObj = earned.find(b => b.badge_id === def.id);
+        const dateStr = earnedObj?.earned_at ? new Date(earnedObj.earned_at).toLocaleDateString('ru') : '';
+        return `
+          <div class="badge-card ${isEarned ? 'earned' : 'locked'} rarity-${def.rarity}">
+            <div class="badge-glow"></div>
+            <div class="badge-emoji">${isEarned ? def.icon : '🔒'}</div>
+            <div class="badge-name">${def.name}</div>
+            <div class="badge-desc">${def.desc}</div>
+            <div class="badge-rarity">${rarityLabel(def.rarity)}</div>
+            ${isEarned ? `<div class="badge-date">${dateStr}</div>` : ''}
+          </div>`;
+      }).join('');
+  }
+  if (achSummary) achSummary.innerHTML =
+    `<span class="ach-count">${earned.length}</span> из <span>${BADGE_DEFS.length}</span> значков получено`;
+}
+  if (achSummary) achSummary.innerHTML =
     `<span class="ach-count">${earned.length}</span> �� <span>${BADGE_DEFS.length}</span> ���������� ��������`;
 }
 
@@ -490,7 +496,8 @@ function renderTalentCard(studentId) {
   if (talentMeta) talentMeta.textContent = student.age + ' ��� � ' + student.grade + ' ����� � ����� ' + student.squad + ' � ����� ' + student.shift;
 
   // ������ � �����
-  document.getElementById('talent-top-badges').innerHTML =
+  var topBadgesEl = document.getElementById('talent-top-badges');
+  if (topBadgesEl) topBadgesEl.innerHTML =
     earnedBadges.map(b => `<span class="mini-badge rarity-${b.rarity}" title="${b.name}">${b.icon}</span>`).join('');
 
   // �����������
@@ -508,7 +515,8 @@ function renderTalentCard(studentId) {
   renderRecommendations(obs, earnedBadges, compScores);
 
   // ���������� �� �����
-  document.getElementById('talent-badges-list').innerHTML = earnedBadges.length
+  var badgesListEl = document.getElementById('talent-badges-list');
+  if (badgesListEl) badgesListEl.innerHTML = earnedBadges.length
     ? earnedBadges.map(b =>
         `<div class="talent-badge-row rarity-${b.rarity}">
           <span class="tbr-icon">${b.icon}</span>
@@ -518,7 +526,8 @@ function renderTalentCard(studentId) {
     : '<p class="empty-note">���������� ���� ���</p>';
 
   // ����������� �������
-  document.getElementById('talent-obs-list').innerHTML = obs.length
+  var obsListEl = document.getElementById('talent-obs-list');
+  if (obsListEl) obsListEl.innerHTML = obs.length
     ? obs.map(o => {
         const task = KTP.find(t => t.track === o.track && t.day === o.day);
         const trackIcon = {bio:'??', eng:'??', media:'??'}[o.track] || '??';
@@ -769,6 +778,7 @@ function renderRadarChart(scores) {
 
 function renderCompBars(scores) {
   const el = document.getElementById('comp-bars');
+  if (!el) return;
   el.innerHTML = COMPETENCIES.map(c => `
     <div class="comp-bar-row">
       <span class="comp-bar-icon">${c.icon}</span>
@@ -822,7 +832,8 @@ function renderDISC(obs) {
   const dominant = Object.entries(disc).sort((a,b) => b[1]-a[1])[0];
 
   // ������ ����� � �������
-  document.getElementById('disc-bars').innerHTML = ['D','I','S','C'].map(t => `
+  var discBarsEl = document.getElementById('disc-bars');
+  if (discBarsEl) discBarsEl.innerHTML = ['D','I','S','C'].map(t => `
     <div class="disc-row">
       <div class="disc-type-label" style="color:${labels[t].color}">${t}</div>
       <div class="disc-bar-wrap">
@@ -834,8 +845,11 @@ function renderDISC(obs) {
     </div>`).join('');
 
   // ������������ ���
-  document.getElementById('disc-dominant').innerHTML =
-    `<span style="color:${labels[dominant[0]].color}">������������ ���: ${dominant[0]} � ${labels[dominant[0]].label}</span>`;
+  const domEl = document.getElementById('disc-dominant');
+  if (domEl) {
+    domEl.innerHTML =
+      `<span style="color:${labels[dominant[0]].color}">������������ ���: ${dominant[0]} � ${labels[dominant[0]].label}</span>`;
+  }
 
   // �����-���� DISC
   const comboHtml = '<h3 style="font-size:0.8rem;color:var(--muted);margin:12px 0 8px;font-weight:600;">�����-���� DISC</h3>' +
@@ -846,7 +860,6 @@ function renderDISC(obs) {
       </div>`).join('');
 
   // ��������� ����� ����� disc-dominant
-  const domEl = document.getElementById('disc-dominant');
   if (domEl && domEl.parentNode) {
     const comboContainer = document.createElement('div');
     comboContainer.innerHTML = comboHtml;
@@ -882,21 +895,24 @@ function renderCareer(obs, badges) {
   };
 
   const p = profiles[primary];
-  document.getElementById('career-content').innerHTML = `
-    <div class="career-hero">
-      <span class="career-hero-icon">${p.icon}</span>
-      <div>
-        <strong>${p.title}</strong>
-        <p>${p.desc}</p>
+  const careerEl = document.getElementById('career-content');
+  if (careerEl) {
+    careerEl.innerHTML = `
+      <div class="career-hero">
+        <span class="career-hero-icon">${p.icon}</span>
+        <div>
+          <strong>${p.title}</strong>
+          <p>${p.desc}</p>
+        </div>
       </div>
-    </div>
-    <div class="career-roles">
-      ${p.roles.map(r => `<span class="career-role-chip">${r}</span>`).join('')}
-    </div>
-    <div class="career-clubs-title">������������� ������:</div>
-    <div class="career-clubs">
-      ${p.clubs.map(c => `<span class="career-club">${c}</span>`).join('')}
-    </div>`;
+      <div class="career-roles">
+        ${p.roles.map(r => `<span class="career-role-chip">${r}</span>`).join('')}
+      </div>
+      <div class="career-clubs-title">������������� ������:</div>
+      <div class="career-clubs">
+        ${p.clubs.map(c => `<span class="career-club">${c}</span>`).join('')}
+      </div>`;
+  }
 }
 
 // =============================================
@@ -929,6 +945,7 @@ function renderDashboard() {
   if (dbAvg) dbAvg.textContent = avgScore;
 
   const grid = document.getElementById('db-student-grid');
+  if (!grid) return;
   if (!list.length) {
     grid.innerHTML = '<div class="empty-state"><div class="empty-icon">??</div><p>��� ���������� ��� ��������� ��������</p></div>';
     return;
