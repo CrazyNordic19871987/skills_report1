@@ -1238,6 +1238,8 @@ function analyzeStudentProfile(obs, badges, compScores) {
     if (c) profile.weaknesses.push(c);
   });
 
+  profile.growthAreas = [...profile.weaknesses];
+
   const trackCounts = { bio: 0, eng: 0, media: 0 };
   obs.forEach(o => { trackCounts[o.track]++; });
   const dominant = Object.entries(trackCounts).sort((a, b) => b[1] - a[1])[0];
