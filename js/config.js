@@ -7,8 +7,8 @@
 //    2. Copy "Project URL" and "anon public" key
 //    3. Replace the values below
 
-const SUPABASE_URL = 'https://xzmxxnhyvbzdebqhomzd.supabase.co'; // ← YOUR PROJECT URL
-const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inh6bXh4bmh5dmJ6ZGVicWhvbXpkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzgyNTEzNzMsImV4cCI6MjA5MzgyNzM3M30.xAKnz6ijF8H1PNHFKVjrLyD264OHCgowkPgd2DqWF18'; // ← YOUR ANON KEY
+const SUPABASE_URL = 'https://YOUR-PROJECT-REF.supabase.co'; // ← YOUR PROJECT URL
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIs...'; // ← YOUR ANON KEY
 
 const TABLES = {
   STUDENTS:     'students',
@@ -174,6 +174,7 @@ const INFRASTRUCTURE = {
 };
 
 // ── Экспорт в window (для доступности в других скриптах) ─────────
+// Константы уже глобальные в браузере, window нужен только для внешних скриптов
 window.SUPABASE_URL = SUPABASE_URL;
 window.SUPABASE_ANON_KEY = SUPABASE_ANON_KEY;
 window.TABLES = TABLES;
