@@ -10,6 +10,11 @@
 const SUPABASE_URL = 'https://xzmxxnhyvbzdebqhomzd.supabase.co'; // ← YOUR PROJECT URL
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inh6bXh4bmh5dmJ6ZGVicWhvbXpkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzgyNTEzNzMsImV4cCI6MjA5MzgyNzM3M30.xAKnz6ijF8H1PNHFKVjrLyD264OHCgowkPgd2DqWF18'; // ← YOUR ANON KEY
 
+// ── OpenAI API Key (for AI Analytics) ──────────
+// Get your key at: https://platform.openai.com/api-keys
+// Leave empty to use local rule-based engine
+const OPENAI_API_KEY = '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';
+
 const TABLES = {
   STUDENTS:     'students',
   OBSERVATIONS: 'observations',
@@ -190,3 +195,4 @@ window.EVENING_ACTIVITIES = EVENING_ACTIVITIES;
 window.ENGLISH_COMPONENTS = ENGLISH_COMPONENTS;
 window.CAMP_TEAM = CAMP_TEAM;
 window.INFRASTRUCTURE = INFRASTRUCTURE;
+window.OPENAI_API_KEY = OPENAI_API_KEY;
