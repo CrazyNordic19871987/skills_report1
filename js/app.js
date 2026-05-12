@@ -264,8 +264,8 @@ function selectDay(day) {
 
 function selectTrack(track) {
   state.currentTrack = track;
-  document.querySelectorAll('.track-pill').forEach(b => b.classList.remove('active'));
-  document.querySelector(`.track-pill[data-track="${track}"]`).classList.add('active');
+  document.querySelectorAll('.track-tab').forEach(b => b.classList.remove('active'));
+  document.querySelector(`.track-tab[data-track="${track}"]`)?.classList.add('active');
   renderDayTabs();
   renderCurrentTask();
 }
