@@ -497,6 +497,7 @@ function renderTalentCard(studentId) {
 
   const compScores = calcCompetencies(obs);
   renderRadarChart(compScores);
+  renderAIInsights(studentId);
   renderCompBars(compScores);
 
   renderDISC(obs);
@@ -531,9 +532,6 @@ function renderTalentCard(studentId) {
         </div>`;
       }).join('')
     : '<p class="empty-note">Наблюдений пока нет</p>';
-
-  const aiSection = document.getElementById('ai-insights-section');
-  if (aiSection) renderAIInsights(studentId);
 }
 
 function renderRecommendations(obs, badges, compScores) {
@@ -1304,6 +1302,9 @@ function analyzeStudentProfile(obs, badges, compScores) {
 }
 
 function renderAIInsights(studentId) {
+  const container = document.getElementById('ai-insights-section');
+  if (!container) return;
+
   const obs = state.observations.filter(o => o.student_id === studentId);
   const badges = state.badges.filter(b => b.student_id === studentId && b.earned);
   const compScores = calcCompetencies(obs);
@@ -1316,13 +1317,13 @@ function renderAIInsights(studentId) {
   const engagementIcons = { high: '🔥', moderate: '⚡', low: '📉' };
 
   if (!obs.length) {
-    return `
-      <div style="padding:12px;background:var(--glass-b);border-radius:10px;text-align:center">
-        <p style="font-size:0.75rem;color:var(--muted)">🤖 Добавьте наблюдения для AI-анализа</p>
-      </div>`;
+    container.innerHTML = `<div style="padding:12px;background:var(--glass-b);border-radius:10px;text-align:center">
+      <p style="font-size:0.75rem;color:var(--muted)">🤖 Добавьте наблюдения для AI-анализа</p>
+    </div>`;
+    return;
   }
 
-  return `
+  container.innerHTML = `
     <div style="background:linear-gradient(135deg,var(--orange-dim),rgba(237,118,21,0.05));border:1px solid var(--border-h);border-radius:10px;padding:12px">
       <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
         <span style="font-size:1.3rem">${trackIcons[profile.dominantTrack]}</span>
