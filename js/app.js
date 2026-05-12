@@ -533,7 +533,7 @@ function renderTalentCard(studentId) {
     : '<p class="empty-note">Наблюдений пока нет</p>';
 
   const aiSection = document.getElementById('ai-insights-section');
-  if (aiSection) aiSection.innerHTML = renderAIInsights(studentId);
+  if (aiSection) renderAIInsights(studentId);
 }
 
 function renderRecommendations(obs, badges, compScores) {
@@ -1400,6 +1400,293 @@ function renderAIInsights(studentId) {
         <p style="font-size:0.75rem;line-height:1.5;color:var(--white)">${profile.summary}</p>
       </div>
     </div>`;
+  return profile;
+}
+
+// =============================================
+//  OPENAI API ANALYTICS
+// =============================================
+
+async function generateOpenAIAnalysis(student, obs, badges, compScores) {
+  if (!OPENAI_API_KEY) return null;
+
+  const competencies = COMPETENCIES.map(c => ({
+    name: c.name,
+    icon: c.icon,
+    score: compScores[c.id] || 0
+  })).sort((a, b) => b.score - a.score);
+
+  const topSkills = competencies.slice(0, 4);
+  const lowSkills = competencies.slice(-3).filter(c => c.score < 30);
+
+  const trackCounts = { bio: 0, eng: 0, media: 0 };
+  obs.forEach(o => { trackCounts[o.track]++; });
+  const dominant = Object.entries(trackCounts).sort((a, b) => b[1] - a[1])[0];
+
+  const avgScore = obs.length > 0
+    ? (obs.reduce((s, o) => s + (o.independence + o.quality) / 2, 0) / obs.length).toFixed(1)
+    : 'N/A';
+
+  const earnedBadges = badges.filter(b => b.earned);
+
+  const prompt = `Ты — эксперт по детскому развитию и образовательным технологиям.
+Проанализируй профиль участника летнего лагеря и дай развёрнутые рекомендации.
+
+УЧАСТНИК: ${student.first_name} ${student.last_name}
+ВОЗРАСТ: ${student.age} лет
+КЛАСС: ${student.grade}
+КОЛИЧЕСТВО НАБЛЮДЕНИЙ: ${obs.length} дней
+СРЕДНИЙ БАЛЛ: ${avgScore}/5
+
+ДОМИНИРУЮЩИЙ ТРЕК: ${dominant[0] === 'bio' ? 'Биотехнологии 🧬' : dominant[0] === 'eng' ? 'Инженерия ⚙️' : 'Медиа 🎥'}
+
+ТОП КОМПЕТЕНЦИИ (сильные стороны):
+${topSkills.map(c => `- ${c.icon} ${c.name}: ${c.score}%`).join('\n')}
+
+ЗОНЫ РОСТА (слабые стороны):
+${lowSkills.length > 0 ? lowSkills.map(c => `- ${c.icon} ${c.name}: ${c.score}%`).join('\n') : '- Недостаточно данных'}
+
+ЗАРАБОТАННЫЕ ЗНАЧКИ: ${earnedBadges.length > 0 ? earnedBadges.map(b => `${b.icon} ${b.name}`).join(', ') : 'Нет'}
+
+ДАННЫЕ ПО ТРЕКАМ:
+- Биотехнологии: ${trackCounts.bio} занятий
+- Инженерия: ${trackCounts.eng} занятий
+- Медиа: ${trackCounts.media} занятий
+
+Верни анализ в формате JSON:
+{
+  "summary": "развёрнутое резюме профиля на 2-3 предложения",
+  "strengths": ["сильная сторона 1", "сильная сторона 2", "сильная сторона 3"],
+  "areasForGrowth": ["зона роста 1", "зона роста 2"],
+  "learningStyle": "стиль обучения (кинестетик/визуал/аудиал/читатель)",
+  "recommendedExtracurricular": [
+    {"name": "название занятия", "reason": "почему подходит этому участнику"}
+  ],
+  "careerHint": "краткая подсказка по возможной карьере/профессии",
+  "tipsForMentors": ["совет 1", "совет 2", "совет 3"]
+}
+
+ВАЖНО: Верни ТОЛЬКО валидный JSON без markdown разметки, без текста до или после. Только объект {}.`;
+
+  try {
+    const response = await fetch('https://api.openai.com/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer ' + OPENAI_API_KEY
+      },
+      body: JSON.stringify({
+        model: 'gpt-4o-mini',
+        messages: [{ role: 'user', content: prompt }],
+        max_tokens: 1500,
+        temperature: 0.7
+      })
+    });
+
+    if (!response.ok) {
+      console.error('OpenAI API error:', response.status);
+      return null;
+    }
+
+    const data = await response.json();
+    const content = data.choices?.[0]?.message?.content?.trim();
+
+    if (content) {
+      try {
+        return JSON.parse(content);
+      } catch (e) {
+        const jsonMatch = content.match(/\{[\s\S]*\}/);
+        if (jsonMatch) {
+          return JSON.parse(jsonMatch[0]);
+        }
+        console.error('Failed to parse OpenAI response');
+        return null;
+      }
+    }
+  } catch (e) {
+    console.error('OpenAI request failed:', e);
+    return null;
+  }
+}
+
+async function renderAIInsights(studentId) {
+  const student = state.students.find(s => s.id === studentId);
+  const obs = state.observations.filter(o => o.student_id === studentId);
+  const badges = state.badges.filter(b => b.student_id === studentId && b.earned);
+  const compScores = calcCompetencies(obs);
+  const localProfile = analyzeStudentProfile(obs, badges, compScores);
+
+  const loadingHTML = `
+    <div class="gc" style="margin-bottom:12px">
+      <h3>🧠 AI-Профиль участника</h3>
+      <div style="display:flex;align-items:center;gap:12px;padding:20px;background:var(--glass-b);border-radius:10px">
+        <div class="loader-ring" style="width:30px;height:30px;border-width:2px"></div>
+        <div>
+          <strong>Анализируем профиль...</strong>
+          <p style="font-size:0.65rem;color:var(--muted);margin:2px 0 0">GPT-4o генерирует персональные рекомендации</p>
+        </div>
+      </div>
+    </div>`;
+
+  const localFallbackHTML = `
+    <div class="gc" style="margin-bottom:12px">
+      <h3>🧠 AI-Профиль участника</h3>
+
+      <div style="background:var(--glass-b);border-radius:10px;padding:14px;margin-bottom:14px">
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">
+          <span style="font-size:1.5rem">${trackIcons[localProfile.dominantTrack]}</span>
+          <div>
+            <strong>Доминирующий трек:</strong> ${trackNames[localProfile.dominantTrack]}
+            <div style="font-size:0.65rem;color:var(--muted)">${localProfile.personalityTraits.join(' · ')}</div>
+          </div>
+        </div>
+        <div style="display:flex;align-items:center;gap:6px">
+          <span>${engagementIcons[localProfile.engagementLevel]}</span>
+          <span>Вовлечённость:</span>
+          <span style="color:${engagementColors[localProfile.engagementLevel]};font-weight:700">${engagementLabels[localProfile.engagementLevel]}</span>
+        </div>
+      </div>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px">
+        <div style="background:rgba(34,197,94,0.1);border:1px solid rgba(34,197,94,0.3);border-radius:10px;padding:10px">
+          <div style="font-size:0.65rem;color:#22C55E;text-transform:uppercase;margin-bottom:6px;font-weight:700">Сильные стороны</div>
+          ${localProfile.strengths.slice(0, 3).map(s => `
+            <div style="display:flex;align-items:center;gap:6px;margin-bottom:4px">
+              <span>${s.icon}</span>
+              <span style="font-size:0.75rem">${s.name}</span>
+            </div>
+          `).join('')}
+        </div>
+        <div style="background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.3);border-radius:10px;padding:10px">
+          <div style="font-size:0.65rem;color:#EF4444;text-transform:uppercase;margin-bottom:6px;font-weight:700">Зоны роста</div>
+          ${localProfile.weaknesses.slice(0, 3).map(s => `
+            <div style="display:flex;align-items:center;gap:6px;margin-bottom:4px">
+              <span>${s.icon}</span>
+              <span style="font-size:0.75rem">${s.name}</span>
+            </div>
+          `).join('')}
+        </div>
+      </div>
+
+      <div style="background:var(--glass-b);border-radius:10px;padding:12px;margin-bottom:14px">
+        <div style="font-size:0.65rem;color:var(--orange);text-transform:uppercase;margin-bottom:6px;font-weight:700">🎯 Стиль обучения</div>
+        <div style="display:flex;align-items:center;gap:8px">
+          <span style="font-size:1.2rem">${localProfile.learningStyle?.icon}</span>
+          <div>
+            <strong>${localProfile.learningStyle?.name}</strong>
+            <p style="font-size:0.65rem;color:var(--muted);margin:2px 0 0">${localProfile.learningStyle?.desc}</p>
+          </div>
+        </div>
+      </div>
+
+      <div style="margin-bottom:14px">
+        <div style="font-size:0.65rem;color:var(--orange);text-transform:uppercase;margin-bottom:8px;font-weight:700">📚 Рекомендуемые занятия</div>
+        <div style="display:flex;flex-direction:column;gap:8px">
+          ${localProfile.recommendedExtracurricular.map(ec => `
+            <div style="background:var(--glass-b);border-radius:8px;padding:10px;display:flex;gap:10px;align-items:flex-start">
+              <span style="font-size:1.2rem;flex-shrink:0">${ec.icon}</span>
+              <div>
+                <strong style="font-size:0.8rem">${ec.name}</strong>
+                <p style="font-size:0.65rem;color:var(--muted);margin:2px 0 0">${ec.desc}</p>
+              </div>
+            </div>
+          `).join('')}
+        </div>
+      </div>
+
+      <div style="background:linear-gradient(135deg,var(--orange-dim),rgba(237,118,21,0.05));border:1px solid var(--border-h);border-radius:10px;padding:12px">
+        <div style="font-size:0.65rem;color:var(--white);text-transform:uppercase;margin-bottom:6px;font-weight:700">📝 AI Заключение</div>
+        <p style="font-size:0.75rem;line-height:1.5;color:var(--white)">${localProfile.summary}</p>
+      </div>
+    </div>`;
+
+  if (!obs.length) {
+    return localFallbackHTML;
+  }
+
+  const container = document.getElementById('ai-insights-section');
+  if (container) container.innerHTML = loadingHTML;
+
+  if (OPENAI_API_KEY) {
+    const aiResult = await generateOpenAIAnalysis(student, obs, badges, compScores);
+
+    if (aiResult && container) {
+      const trackNames = { bio: 'Биотехнологии', eng: 'Инженерия', media: 'Медиа' };
+      const trackIcons = { bio: '🧬', eng: '⚙️', media: '🎥' };
+
+      const extraHTML = aiResult.recommendedExtracurricular?.length > 0
+        ? aiResult.recommendedExtracurricular.map(ec => `
+            <div style="background:var(--glass-b);border-radius:8px;padding:10px;display:flex;gap:10px;align-items:flex-start">
+              <span style="font-size:1.2rem;flex-shrink:0">💡</span>
+              <div>
+                <strong style="font-size:0.8rem">${ec.name}</strong>
+                <p style="font-size:0.65rem;color:var(--muted);margin:2px 0 0">${ec.reason}</p>
+              </div>
+            </div>
+          `).join('')
+        : '';
+
+      const tipsHTML = aiResult.tipsForMentors?.length > 0
+        ? aiResult.tipsForMentors.map(t => `<li style="margin-bottom:4px;font-size:0.75rem">${t}</li>`).join('')
+        : '';
+
+      container.innerHTML = `
+        <div class="gc" style="margin-bottom:12px">
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
+            <h3 style="margin:0">🧠 GPT-4 Анализ</h3>
+            <span style="font-size:0.55rem;background:var(--orange-dim);color:var(--orange);padding:2px 6px;border-radius:4px">Powered by OpenAI</span>
+          </div>
+
+          ${aiResult.summary ? `
+            <div style="background:linear-gradient(135deg,var(--orange-dim),rgba(237,118,21,0.05));border:1px solid var(--border-h);border-radius:10px;padding:14px;margin-bottom:14px">
+              <p style="font-size:0.8rem;line-height:1.6">${aiResult.summary}</p>
+            </div>
+          ` : ''}
+
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px">
+            <div style="background:rgba(34,197,94,0.1);border:1px solid rgba(34,197,94,0.3);border-radius:10px;padding:10px">
+              <div style="font-size:0.65rem;color:#22C55E;text-transform:uppercase;margin-bottom:6px;font-weight:700">💪 Сильные стороны</div>
+              ${(aiResult.strengths || []).slice(0, 3).map(s => `<div style="font-size:0.75rem;margin-bottom:4px">• ${s}</div>`).join('')}
+            </div>
+            <div style="background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.3);border-radius:10px;padding:10px">
+              <div style="font-size:0.65rem;color:#EF4444;text-transform:uppercase;margin-bottom:6px;font-weight:700">📈 Зоны роста</div>
+              ${(aiResult.areasForGrowth || []).slice(0, 3).map(s => `<div style="font-size:0.75rem;margin-bottom:4px">• ${s}</div>`).join('')}
+            </div>
+          </div>
+
+          ${aiResult.learningStyle ? `
+            <div style="background:var(--glass-b);border-radius:10px;padding:12px;margin-bottom:14px">
+              <div style="font-size:0.65rem;color:var(--orange);text-transform:uppercase;margin-bottom:6px;font-weight:700">🎯 Стиль обучения</div>
+              <strong>${aiResult.learningStyle}</strong>
+            </div>
+          ` : ''}
+
+          ${extraHTML ? `
+            <div style="margin-bottom:14px">
+              <div style="font-size:0.65rem;color:var(--orange);text-transform:uppercase;margin-bottom:8px;font-weight:700">📚 GPT Рекомендации</div>
+              ${extraHTML}
+            </div>
+          ` : ''}
+
+          ${aiResult.careerHint ? `
+            <div style="background:rgba(139,92,246,0.1);border:1px solid rgba(139,92,246,0.3);border-radius:10px;padding:12px;margin-bottom:14px">
+              <div style="font-size:0.65rem;color:#8B5CF6;text-transform:uppercase;margin-bottom:6px;font-weight:700">🚀 Карьерный намек</div>
+              <p style="font-size:0.75rem">${aiResult.careerHint}</p>
+            </div>
+          ` : ''}
+
+          ${tipsHTML ? `
+            <div style="background:var(--glass-b);border-radius:10px;padding:12px">
+              <div style="font-size:0.65rem;color:var(--muted);text-transform:uppercase;margin-bottom:6px;font-weight:700">💡 Советы вожатым</div>
+              <ul style="margin:0;padding-left:16px">${tipsHTML}</ul>
+            </div>
+          ` : ''}
+        </div>`;
+      return;
+    }
+  }
+
+  if (container) container.innerHTML = localFallbackHTML;
 }
 
 function renderCampTeam(container) {
