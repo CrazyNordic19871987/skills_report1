@@ -1308,16 +1308,39 @@ function renderAIInsights(studentId) {
   const badges = state.badges.filter(b => b.student_id === studentId && b.earned);
   const compScores = calcCompetencies(obs);
 
+  const trackNames = { bio: 'Биотехнологии', eng: 'Инженерия', media: 'Медиа' };
+  const trackIcons = { bio: '🧬', eng: '⚙️', media: '🎥' };
+  const engagementColors = { high: '#22C55E', moderate: '#FBBF24', low: '#EF4444' };
+  const engagementLabels = { high: 'Высокая', moderate: 'Средняя', low: 'Низкая' };
+  const engagementIcons = { high: '🔥', moderate: '⚡', low: '📉' };
+
   if (!obs.length) {
     return `
-      <div class="gc" style="margin-bottom:12px">
-        <h3>🧠 AI-Анализ</h3>
-        <div class="empty-note" style="padding:20px;text-align:center">
-          <p>🤖 Недостаточно данных для анализа</p>
-          <p style="font-size:0.7rem;color:var(--muted);margin-top:8px">Добавьте минимум 3 наблюдения для получения персонального анализа</p>
-        </div>
+      <div style="padding:12px;background:var(--glass-b);border-radius:10px;text-align:center">
+        <p style="font-size:0.75rem;color:var(--muted)">🤖 Добавьте наблюдения для AI-анализа</p>
       </div>`;
   }
+
+  return `
+    <div style="background:linear-gradient(135deg,var(--orange-dim),rgba(237,118,21,0.05));border:1px solid var(--border-h);border-radius:10px;padding:12px">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
+        <span style="font-size:1.3rem">${trackIcons[profile.dominantTrack]}</span>
+        <div>
+          <strong>${trackNames[profile.dominantTrack]}</strong>
+          <span style="font-size:0.65rem;color:var(--muted);margin-left:6px">· ${profile.learningStyle?.icon} ${profile.learningStyle?.name}</span>
+        </div>
+        <span style="margin-left:auto;font-size:0.7rem;color:${engagementColors[profile.engagementLevel]};font-weight:700">${engagementIcons[profile.engagementLevel]} ${engagementLabels[profile.engagementLevel]}</span>
+      </div>
+      <p style="font-size:0.7rem;line-height:1.4;color:var(--white);margin:0">${profile.summary}</p>
+      ${profile.recommendedExtracurricular.length > 0 ? `
+        <div style="margin-top:8px;padding-top:8px;border-top:1px solid var(--border);display:flex;gap:6px;flex-wrap:wrap">
+          ${profile.recommendedExtracurricular.slice(0, 2).map(ec => `
+            <span style="font-size:0.65rem;background:var(--glass-b);padding:3px 8px;border-radius:6px">${ec.icon} ${ec.name}</span>
+          `).join('')}
+        </div>
+      ` : ''}
+    </div>`;
+}
 
   const profile = analyzeStudentProfile(obs, badges, compScores);
   const trackNames = { bio: 'Биотехнологии', eng: 'Инженерия', media: 'Медиа' };
