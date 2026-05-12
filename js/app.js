@@ -1292,11 +1292,7 @@ function analyzeStudentProfile(obs, badges, compScores) {
     media: 'Этот профиль показывает склонность к творчеству, съёмке и работе с аудиторией.'
   };
 
-  profile.summary = `За ${obs.length} дней участник показал средний балл ${avgScore.toFixed(1)}/5. ` +
-    `Доминирующее направление — ${trackNames[dominant[0]]} (${trackIcons[dominant[0]]}). ` +
-    `${trackDesc[dominant[0]]} ` +
-    `Сильные стороны: ${profile.strengths.slice(0, 3).map(s => s.name).join(', ') || 'требуется анализ'}. ` +
-    `${engagementText[profile.engagementLevel]}`;
+  profile.summary = `За ${obs.length} ${obs.length === 1 ? 'мероприятие' : obs.length < 5 ? 'мероприятия' : 'мероприятий'} участник показал средний балл ${avgScore.toFixed(1)}/5. Доминирующее направление — ${trackNames[dominant[0]]} (${trackIcons[dominant[0]]}). ${trackDesc[dominant[0]]} Сильные стороны: ${profile.strengths.slice(0, 3).map(s => s.name).join(', ') || 'требуется анализ'}. ${engagementText[profile.engagementLevel]}`;
 
   return profile;
 }
@@ -1315,6 +1311,8 @@ function renderAIInsights(studentId) {
   const engagementColors = { high: '#22C55E', moderate: '#FBBF24', low: '#EF4444' };
   const engagementLabels = { high: 'Высокая', moderate: 'Средняя', low: 'Низкая' };
   const engagementIcons = { high: '🔥', moderate: '⚡', low: '📉' };
+  const growthLabels = { high: 'Низкая', moderate: 'Средняя', low: 'Высокая' };
+  const growthIcons = { high: '💚', moderate: '💛', low: '🔴' };
 
   if (!obs.length) {
     container.innerHTML = `<div style="padding:12px;background:var(--glass-b);border-radius:10px;text-align:center">
@@ -1323,24 +1321,77 @@ function renderAIInsights(studentId) {
     return;
   }
 
+  const avgScore = obs.length ? (obs.reduce((s, o) => s + (o.independence + o.quality) / 2, 0) / obs.length).toFixed(1) : '0';
+
   container.innerHTML = `
-    <div style="background:linear-gradient(135deg,var(--orange-dim),rgba(237,118,21,0.05));border:1px solid var(--border-h);border-radius:10px;padding:12px">
-      <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
-        <span style="font-size:1.3rem">${trackIcons[profile.dominantTrack]}</span>
+    <div style="background:linear-gradient(135deg,var(--orange-dim),rgba(237,118,21,0.05));border:1px solid var(--border-h);border-radius:10px;padding:16px">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;padding-bottom:12px;border-bottom:1px solid var(--border)">
+        <span style="font-size:1.6rem">${trackIcons[profile.dominantTrack]}</span>
         <div>
-          <strong>${trackNames[profile.dominantTrack]}</strong>
-          <span style="font-size:0.65rem;color:var(--muted);margin-left:6px">· ${profile.learningStyle?.icon} ${profile.learningStyle?.name}</span>
+          <strong style="font-size:0.9rem">Доминирующий трек: ${trackNames[profile.dominantTrack]}</strong>
+          <p style="font-size:0.7rem;color:var(--muted);margin:2px 0 0">${profile.learningStyle?.icon} ${profile.learningStyle?.name}</p>
         </div>
-        <span style="margin-left:auto;font-size:0.7rem;color:${engagementColors[profile.engagementLevel]};font-weight:700">${engagementIcons[profile.engagementLevel]} ${engagementLabels[profile.engagementLevel]}</span>
+        <div style="margin-left:auto;text-align:right">
+          <div style="font-size:0.65rem;color:var(--muted)">Вовлечённость</div>
+          <div style="font-size:0.8rem;font-weight:700;color:${engagementColors[profile.engagementLevel]}">${engagementIcons[profile.engagementLevel]} ${engagementLabels[profile.engagementLevel]}</div>
+        </div>
       </div>
-      <p style="font-size:0.7rem;line-height:1.4;color:var(--white);margin:0">${profile.summary}</p>
-      ${profile.recommendedExtracurricular.length > 0 ? `
-        <div style="margin-top:8px;padding-top:8px;border-top:1px solid var(--border);display:flex;gap:6px;flex-wrap:wrap">
-          ${profile.recommendedExtracurricular.slice(0, 2).map(ec => `
-            <span style="font-size:0.65rem;background:var(--glass-b);padding:3px 8px;border-radius:6px">${ec.icon} ${ec.name}</span>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px">
+        <div>
+          <div style="font-size:0.7rem;color:var(--muted);margin-bottom:8px">🎯 Сильные стороны</div>
+          <div style="display:flex;flex-direction:column;gap:6px">
+            ${profile.strengths.slice(0, 4).map(s => `
+              <div style="display:flex;align-items:center;gap:6px;font-size:0.7rem">
+                <span>${s.icon || '⭐'}</span>
+                <span>${s.name}</span>
+              </div>
+            `).join('')}
+          </div>
+        </div>
+        <div>
+          <div style="font-size:0.7rem;color:var(--muted);margin-bottom:8px">📈 Зоны роста</div>
+          <div style="display:flex;flex-direction:column;gap:6px">
+            ${profile.growthAreas.slice(0, 3).map(g => `
+              <div style="display:flex;align-items:center;gap:6px;font-size:0.7rem">
+                <span>${g.icon || '📌'}</span>
+                <span>${g.name}</span>
+              </div>
+            `).join('')}
+          </div>
+        </div>
+      </div>
+
+      <div style="margin-bottom:14px;padding:10px;background:var(--glass-b);border-radius:8px">
+        <div style="font-size:0.7rem;color:var(--muted);margin-bottom:8px">🎯 Стиль обучения</div>
+        <div style="display:flex;align-items:center;gap:8px">
+          <span style="font-size:1.2rem">${profile.learningStyle?.icon || '🎓'}</span>
+          <div>
+            <strong style="font-size:0.75rem">${profile.learningStyle?.name || 'Аналитик'}</strong>
+            <p style="font-size:0.65rem;color:var(--muted);margin:2px 0 0">${profile.learningStyle?.desc || 'Учится через анализ и логику.'}</p>
+          </div>
+        </div>
+      </div>
+
+      <div style="margin-bottom:14px">
+        <div style="font-size:0.7rem;color:var(--muted);margin-bottom:10px">📚 Рекомендуемые занятия</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+          ${profile.recommendedExtracurricular.slice(0, 10).map(ec => `
+            <div style="display:flex;align-items:flex-start;gap:8px;padding:8px;background:var(--glass-b);border-radius:8px">
+              <span style="font-size:1.1rem">${ec.icon}</span>
+              <div>
+                <strong style="font-size:0.7rem">${ec.name}</strong>
+                <p style="font-size:0.6rem;color:var(--muted);margin:2px 0 0">${ec.desc}</p>
+              </div>
+            </div>
           `).join('')}
         </div>
-      ` : ''}
+      </div>
+
+      <div style="padding:12px;background:linear-gradient(135deg,rgba(99,102,241,0.1),rgba(168,85,247,0.05));border:1px solid var(--border);border-radius:8px">
+        <div style="font-size:0.7rem;color:var(--accent);margin-bottom:6px">🧠 AI Заключение</div>
+        <p style="font-size:0.7rem;line-height:1.5;color:var(--white);margin:0">За ${obs.length} ${obs.length === 1 ? 'мероприятие' : obs.length < 5 ? 'мероприятия' : 'мероприятий'} участник показал средний балл ${avgScore}/5. Доминирующее направление — ${trackNames[profile.dominantTrack]} (${trackIcons[profile.dominantTrack]}). ${profile.learningStyle?.desc || ''} Сильные стороны: ${profile.strengths.slice(0, 3).map(s => s.name).join(', ') || 'требуется анализ'}. ${engagementLabels[profile.engagementLevel]} вовлечённость.</p>
+      </div>
     </div>`;
 }
 
