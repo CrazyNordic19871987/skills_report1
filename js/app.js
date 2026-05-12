@@ -1,8 +1,8 @@
 // =============================================
-//  ONE! Summer Game 2026 � ������� ������ ����������
+//  ONE! Summer Game 2026 — Лагерь будущего 2026
 // =============================================
 
-// -- ���������� ��������� ----------------------
+// -- Состояние приложения ----------------------
 let state = {
   students: [],
   observations: [],
@@ -24,7 +24,7 @@ function ge(id) {
   return document.getElementById(id);
 }
 
-// -- ������������� -----------------------------
+// -- Инициализация -----------------------------
 document.addEventListener('DOMContentLoaded', async () => {
   try {
     showLoader(true);
@@ -48,20 +48,20 @@ async function loadData() {
     api.getAll(TABLES.OBSERVATIONS),
     api.getAll(TABLES.BADGES)
   ]);
-  state.students    = Array.isArray(students) && students.length ? students : LS.get('students');
-  state.observations = Array.isArray(observations) && observations.length ? observations : LS.get('observations');
-  state.badges      = Array.isArray(badges) && badges.length ? badges : LS.get('badges');
+  state.students    = Array.isArray(students) ? students : LS.get('students');
+  state.observations = Array.isArray(observations) ? observations : LS.get('observations');
+  state.badges      = Array.isArray(badges) ? badges : LS.get('badges');
 }
 
 function showLoader(v) {
-  var loader = ge('app-loader');
+  const loader = ge('app-loader');
   if (loader) {
     loader.style.opacity = v ? '1' : '0';
     loader.style.pointerEvents = v ? 'all' : 'none';
   }
 }
 
-// -- ��������� ---------------------------------
+// -- Навигация ---------------------------------
 function setupNav() {
   document.querySelectorAll('.nav-item').forEach(btn => {
     btn.addEventListener('click', () => {
@@ -84,7 +84,7 @@ function navigateTo(page) {
   if (el) el.classList.add('active');
   animatePageIn(page);
 
-  var navBtn = document.querySelector(`.nav-item[data-page="${page}"]`);
+  const navBtn = document.querySelector(`.nav-item[data-page="${page}"]`);
   if (navBtn) navBtn.classList.add('active');
   state.currentPage = page;
 
@@ -99,11 +99,11 @@ function animatePageIn(page) {
   const el = document.getElementById('page-' + page);
   if (!el) return;
   el.style.animation = 'none';
-  el.offsetHeight; // reflow
+  el.offsetHeight;
   el.style.animation = 'pageSlideIn 0.45s cubic-bezier(0.22,1,0.36,1) forwards';
 }
 
-// -- ����� --------------------------------------
+// -- Поиск --------------------------------------
 function setupSearch() {
   document.getElementById('search-input').addEventListener('input', (e) => {
     state.searchQuery = e.target.value.toLowerCase();
@@ -112,13 +112,13 @@ function setupSearch() {
 }
 
 // =============================================
-//  �������� 1: ���������
+//  Страница 1: Участники
 // =============================================
 
 document.getElementById('student-form').addEventListener('submit', async (e) => {
   e.preventDefault();
   const btn = e.target.querySelector('button[type="submit"]');
-  btn.textContent = '����������...';
+  btn.textContent = 'Сохранение...';
   btn.disabled = true;
 
   const student = {
@@ -134,6 +134,7 @@ document.getElementById('student-form').addEventListener('submit', async (e) => 
   };
 
   const result = await api.insert(TABLES.STUDENTS, student);
+  if (!result) showToast('⚠️ Сохранено локально (нет связи с сервером)', 'warn');
   const saved = result ? result[0] : { ...student, id: Date.now().toString() };
 
   state.students.unshift(saved);
@@ -141,15 +142,15 @@ document.getElementById('student-form').addEventListener('submit', async (e) => 
   renderStudentList();
 
   e.target.reset();
-  btn.textContent = '+ �������� ���������';
+  btn.textContent = '+ Добавить участника';
   btn.disabled = false;
-  showToast('? �������� ��������!');
+  showToast('✓ Участник добавлен!');
 });
 
 function renderStudentList() {
   const el = document.getElementById('student-list');
   const countEl = document.getElementById('student-count');
-  if (!el) return; // Element not yet in DOM
+  if (!el) return;
   if (countEl) countEl.textContent = state.students.length;
   let list = state.students;
 
@@ -161,8 +162,8 @@ function renderStudentList() {
 
   if (!list.length) {
     el.innerHTML = `<div class="empty-state">
-      <div class="empty-icon">??</div>
-      <p>${state.searchQuery ? '�������� �� ������' : '��� ����������. �������� �������!'}</p>
+      <div class="empty-icon">👥</div>
+      <p>${state.searchQuery ? 'Участник не найден' : 'Нет участников. Добавьте первого!'}</p>
     </div>`;
     return;
   }
@@ -177,17 +178,16 @@ function renderStudentList() {
         <div class="sc-avatar">${initials}</div>
         <div class="sc-info">
           <div class="sc-name">${s.first_name} ${s.last_name}</div>
-          <div class="sc-meta">${s.age} ��� � ${s.gender} � ${s.grade} �� � ����� ${s.squad} � ����� ${s.shift}</div>
+          <div class="sc-meta">${s.age} лет · ${s.gender} · ${s.grade} кл. · отряд ${s.squad} · смена ${s.shift}</div>
           <div class="sc-progress">
             <div class="sc-progress-bar"><div class="sc-progress-fill" style="width:${progress}%"></div></div>
-            <span class="sc-progress-label">${obs} ������� � ${bdgs} �������</span>
+            <span class="sc-progress-label">${obs} занятий · ${bdgs} значков</span>
           </div>
         </div>
-        <button class="sc-delete" onclick="deleteStudent(event,'${s.id}')">?</button>
+        <button class="sc-delete" onclick="deleteStudent(event,'${s.id}')">✕</button>
       </div>`;
   }).join('');
 
-  // Staggered entrance animation
   el.querySelectorAll('.student-card').forEach((card, i) => {
     card.style.animationDelay = (i * 0.06) + 's';
     card.classList.add('card-enter');
@@ -208,25 +208,25 @@ function quickViewStudent(id) {
 
 async function deleteStudent(e, id) {
   e.stopPropagation();
-  if (!confirm('������� ��������� � ��� ��� ������?')) return;
+  if (!confirm('Удалить участника и все его данные?')) return;
   await api.remove(TABLES.STUDENTS, id);
   state.students = state.students.filter(s => s.id !== id);
   state.observations = state.observations.filter(o => o.student_id !== id);
   state.badges = state.badges.filter(b => b.student_id !== id);
   LS.set('students', state.students);
   renderStudentList();
-  showToast('??? �������� �����');
+  showToast('✓ Участник удалён');
 }
 
 // =============================================
-//  �������� 2: �������
+//  Страница 2: Задания
 // =============================================
 
 function populateStudentSelect(selectId, onChange) {
   const sel = document.getElementById(selectId);
-  sel.innerHTML = '<option value="">� �������� ��������� �</option>' +
+  sel.innerHTML = '<option value="">— Выбрать участника —</option>' +
     state.students.map(s =>
-      `<option value="${s.id}">${s.first_name} ${s.last_name} � ����� ${s.squad}</option>`
+      `<option value="${s.id}">${s.first_name} ${s.last_name} · отряд ${s.squad}</option>`
     ).join('');
   sel.onchange = onChange;
 
@@ -273,12 +273,11 @@ function selectTrack(track) {
 function renderCurrentTask() {
   const task = KTP.find(t => t.track === state.currentTrack && t.day === state.currentDay);
   const container = ge('task-detail');
-  if (!task || !container) { if (container) container.innerHTML = '<p class="empty-note">��� �������</p>'; return; }
+  if (!task || !container) { if (container) container.innerHTML = '<p class="empty-note">Выберите задание</p>'; return; }
 
   const obs = getObservation(state.currentStudentId, state.currentDay, state.currentTrack);
   tempRatings = { independence: obs?.independence || 0, quality: obs?.quality || 0 };
 
-  // ���������� ������ �������� ��������
   function starBtns(type, obsVal) {
     let html = '';
     for (let n = 1; n <= 5; n++) {
@@ -296,37 +295,37 @@ function renderCurrentTask() {
 
   let html =
     '<div class="task-header">' +
-      '<div class="task-day-badge">���� ' + task.day + '</div>' +
+      '<div class="task-day-badge">День ' + task.day + '</div>' +
       '<h3 class="task-title">' + task.name + '</h3>' +
       '<p class="task-desc">' + task.desc + '</p>' +
       '<div class="task-skills">' + skillChips + '</div>' +
     '</div>' +
     '<div class="task-form">' +
       '<div class="rating-group">' +
-        '<label>�����������������</label>' +
+        '<label>Самостоятельность</label>' +
         '<div class="star-rating" id="rate-independence">' +
           starBtns('independence', obs ? obs.independence : 0) +
         '</div>' +
       '</div>' +
       '<div class="rating-group">' +
-        '<label>��������</label>' +
+        '<label>Качество</label>' +
         '<div class="star-rating" id="rate-quality">' +
           starBtns('quality', obs ? obs.quality : 0) +
         '</div>' +
       '</div>' +
       '<label class="toggle-row">' +
-        '<span>������� ����������</span>' +
+        '<span>Проявил инициативу</span>' +
         '<div class="toggle-wrap">' +
           '<input type="checkbox" id="chk-initiative" ' + (obs && obs.initiative ? 'checked' : '') + '>' +
           '<span class="toggle-slider"></span>' +
         '</div>' +
       '</label>' +
       '<div class="form-group">' +
-        '<label>������� ��������</label>' +
-        '<textarea id="obs-notes" rows="2" placeholder="����������...">' + (obs ? obs.notes || '' : '') + '</textarea>' +
+        '<label>Заметки вожатого</label>' +
+        '<textarea id="obs-notes" rows="2" placeholder="Комментарии...">' + (obs ? obs.notes || '' : '') + '</textarea>' +
       '</div>' +
       '<button class="btn-primary" onclick="saveObservation()">' +
-        (obs ? '?? ��������' : '? ��������� �������') +
+        (obs ? '✓ Обновить' : '✓ Сохранить задание') +
       '</button>' +
     '</div>';
 
@@ -334,7 +333,6 @@ function renderCurrentTask() {
 }
 
 function setRating(field, val) {
-  const obs = getObservation(state.currentStudentId, state.currentDay, state.currentTrack);
   tempRatings[field] = val;
   document.querySelectorAll(`#rate-${field} .star`).forEach((s, i) => {
     s.classList.toggle('active', i < val);
@@ -346,7 +344,7 @@ async function saveObservation() {
   const qualEl = document.querySelectorAll('#rate-quality .star.active');
   const independence = indEl.length || tempRatings.independence;
   const quality = qualEl.length || tempRatings.quality;
-  if (!independence || !quality) { showToast('?? �������� ������!', 'warn'); return; }
+  if (!independence || !quality) { showToast('⚠️ Поставьте оценки!', 'warn'); return; }
 
   const data = {
     student_id:   state.currentStudentId,
@@ -365,6 +363,7 @@ async function saveObservation() {
     Object.assign(existing, data);
   } else {
     const result = await api.insert(TABLES.OBSERVATIONS, data);
+    if (!result) showToast('⚠️ Сохранено локально (нет связи с сервером)', 'warn');
     const saved = result ? result[0] : { ...data, id: Date.now().toString() };
     state.observations.push(saved);
   }
@@ -373,7 +372,7 @@ async function saveObservation() {
   await checkAndAwardBadges(state.currentStudentId, state.currentDay, state.currentTrack, data);
   renderDayTabs();
   renderCurrentTask();
-  showToast('? ������� ���������!');
+  showToast('✓ Задание сохранено!');
 }
 
 function getObservation(studentId, day, track) {
@@ -387,7 +386,7 @@ function hasObservation(studentId, day, track) {
 }
 
 // =============================================
-//  �������� 3: ���������� (����-����������)
+//  Страница 3: Достижения (авто-начисление)
 // =============================================
 
 async function checkAndAwardBadges(studentId, day, track, obs) {
@@ -411,6 +410,7 @@ async function checkAndAwardBadges(studentId, day, track, obs) {
       created_at: new Date().toISOString()
     };
     const result = await api.insert(TABLES.BADGES, badge);
+    if (!result) showToast('⚠️ Значок сохранён локально', 'warn');
     const saved = result ? result[0] : { ...badge, id: Date.now().toString() };
     state.badges.push(saved);
     LS.set('badges', state.badges);
@@ -422,7 +422,7 @@ function showBadgeNotification(def) {
   const el = document.createElement('div');
   el.className = 'badge-notification rarity-' + def.rarity;
   el.innerHTML = `<div class="bn-icon">${def.icon}</div>
-    <div class="bn-text"><strong>����� ����������!</strong><span>${def.name}</span></div>`;
+    <div class="bn-text"><strong>Новый значок!</strong><span>${def.name}</span></div>`;
   document.body.appendChild(el);
   setTimeout(() => el.classList.add('show'), 50);
   setTimeout(() => { el.classList.remove('show'); setTimeout(() => el.remove(), 500); }, 3500);
@@ -439,8 +439,8 @@ function renderAchievements(studentId) {
   const earned = state.badges.filter(b => b.student_id === studentId && b.earned);
   const earnedIds = new Set(earned.map(b => b.badge_id));
   const rarityOrder = { legendary:0, epic:1, rare:2, common:3 };
-  var badgeGrid = document.getElementById('badge-grid');
-  var achSummary = document.getElementById('ach-summary');
+  const badgeGrid = document.getElementById('badge-grid');
+  const achSummary = document.getElementById('ach-summary');
 
   if (badgeGrid) {
     badgeGrid.innerHTML = BADGE_DEFS
@@ -463,16 +463,13 @@ function renderAchievements(studentId) {
   if (achSummary) achSummary.innerHTML =
     `<span class="ach-count">${earned.length}</span> из <span>${BADGE_DEFS.length}</span> значков получено`;
 }
-  if (achSummary) achSummary.innerHTML =
-    `<span class="ach-count">${earned.length}</span> �� <span>${BADGE_DEFS.length}</span> ���������� ��������`;
-}
 
 function rarityLabel(r) {
-  return { common:'�������', rare:'������', epic:'���������', legendary:'�����������' }[r] || r;
+  return { common:'Обычный', rare:'Редкий', epic:'Эпический', legendary:'Легендарный' }[r] || r;
 }
 
 // =============================================
-//  �������� 4: ����� ��������
+//  Страница 4: Таланты участника
 // =============================================
 
 function onTalentStudentChange() {
@@ -489,33 +486,26 @@ function renderTalentCard(studentId) {
   const obs = state.observations.filter(o => o.student_id === studentId);
   const earnedBadges = state.badges.filter(b => b.student_id === studentId && b.earned);
 
-  // ���������
-  var talentName = ge('talent-name');
-  var talentMeta = ge('talent-meta');
+  const talentName = ge('talent-name');
+  const talentMeta = ge('talent-meta');
   if (talentName) talentName.textContent = student.first_name + ' ' + student.last_name;
-  if (talentMeta) talentMeta.textContent = student.age + ' ��� � ' + student.grade + ' ����� � ����� ' + student.squad + ' � ����� ' + student.shift;
+  if (talentMeta) talentMeta.textContent = student.age + ' лет · ' + student.grade + ' класс · отряд ' + student.squad + ' · смена ' + student.shift;
 
-  // ������ � �����
-  var topBadgesEl = document.getElementById('talent-top-badges');
+  const topBadgesEl = document.getElementById('talent-top-badges');
   if (topBadgesEl) topBadgesEl.innerHTML =
     earnedBadges.map(b => `<span class="mini-badge rarity-${b.rarity}" title="${b.name}">${b.icon}</span>`).join('');
 
-  // �����������
   const compScores = calcCompetencies(obs);
   renderRadarChart(compScores);
   renderCompBars(compScores);
 
-  // DISC (���������� � ������� � �����)
   renderDISC(obs);
 
-  // ��������� �������
   renderCareer(obs, earnedBadges);
 
-  // �����: ������������ ������������ �� ���������� (����������)
   renderRecommendations(obs, earnedBadges, compScores);
 
-  // ���������� �� �����
-  var badgesListEl = document.getElementById('talent-badges-list');
+  const badgesListEl = document.getElementById('talent-badges-list');
   if (badgesListEl) badgesListEl.innerHTML = earnedBadges.length
     ? earnedBadges.map(b =>
         `<div class="talent-badge-row rarity-${b.rarity}">
@@ -523,33 +513,30 @@ function renderTalentCard(studentId) {
           <div><strong>${b.name}</strong><p>${b.desc || ''}</p></div>
           <span class="tbr-rarity">${rarityLabel(b.rarity)}</span>
         </div>`).join('')
-    : '<p class="empty-note">���������� ���� ���</p>';
+    : '<p class="empty-note">Значков пока нет</p>';
 
-  // ����������� �������
-  var obsListEl = document.getElementById('talent-obs-list');
+  const obsListEl = document.getElementById('talent-obs-list');
   if (obsListEl) obsListEl.innerHTML = obs.length
     ? obs.map(o => {
         const task = KTP.find(t => t.track === o.track && t.day === o.day);
-        const trackIcon = {bio:'??', eng:'??', media:'??'}[o.track] || '??';
+        const trackIcon = {bio:'🧬', eng:'⚙️', media:'🎥'}[o.track] || '📋';
         return `<div class="obs-row">
           <span class="obs-icon">${trackIcon}</span>
-          <div class="obs-info"><strong>${task?.name || '�������'}</strong> � ���� ${o.day}</div>
+          <div class="obs-info"><strong>${task?.name || 'Задание'}</strong> · день ${o.day}</div>
           <div class="obs-scores">
-            <span>?? ${o.independence}/5</span>
-            <span>? ${o.quality}/5</span>
-            ${o.initiative ? '<span class="init-chip">?? ����������</span>' : ''}
+            <span>💪 ${o.independence}/5</span>
+            <span>★ ${o.quality}/5</span>
+            ${o.initiative ? '<span class="init-chip">🚀 инициатива</span>' : ''}
           </div>
         </div>`;
       }).join('')
-    : '<p class="empty-note">������� ���� ���</p>';
+    : '<p class="empty-note">Наблюдений пока нет</p>';
 }
 
-// -- ������������ �� ���������� (���������� TRACK_PROFESSIONS �� config.js) ----------------
 function renderRecommendations(obs, badges, compScores) {
   const container = document.getElementById('recommendations-content');
   if (!container) return;
 
-  // ��������� � �� �������� (�� ������ TRACK_PROFESSIONS)
   const professions = [];
   Object.entries(TRACK_PROFESSIONS).forEach(([track, profs]) => {
     profs.forEach(prof => {
@@ -559,7 +546,7 @@ function renderRecommendations(obs, badges, compScores) {
       professions.push({
         id: prof.title.toLowerCase().replace(/\s/g, '_'),
         name: prof.title,
-        icon: track === 'bio' ? '??' : track === 'eng' ? '??' : '??',
+        icon: track === 'bio' ? '🧬' : track === 'eng' ? '⚙️' : '🎥',
         desc: prof.desc,
         criteria: {
           tracks: [track],
@@ -571,48 +558,44 @@ function renderRecommendations(obs, badges, compScores) {
     });
   });
 
-  // ������ ������������� ��� ������ ���������
   const scored = professions.map(prof => {
     let score = 0;
     let maxScore = 0;
     const comments = [];
 
-    // 1. ������ �� ����������� ������ (40% ����)
     const relevantObs = obs.filter(o => prof.criteria.tracks.includes(o.track));
     if (relevantObs.length > 0) {
       const avgScore = relevantObs.reduce((sum, o) => sum + (o.independence + o.quality) / 2, 0) / relevantObs.length;
       if (avgScore >= prof.criteria.minAvgScore) {
         const trackScore = Math.min(40, (avgScore / 5) * 40);
         score += trackScore;
-        comments.push(`? �������� ������ � ����� (${avgScore.toFixed(1)}/5)`);
+        comments.push(`✓ Хорошие оценки в треке (${avgScore.toFixed(1)}/5)`);
       } else {
-        comments.push(`?? ������ ���� ������������� (${avgScore.toFixed(1)}/5)`);
+        comments.push(`⚠ Баллы ниже порога (${avgScore.toFixed(1)}/5)`);
       }
       maxScore += 40;
     } else {
-      comments.push(`? ��� ������� � ����������� �����`);
+      comments.push(`— Нет данных в треке`);
       maxScore += 40;
     }
 
-    // 2. ������ (35% ����)
     const earnedBadgeIds = badges.map(b => b.badge_id);
     const relevantBadges = prof.criteria.badges.filter(b => earnedBadgeIds.includes(b));
     if (prof.criteria.badges.length > 0) {
       const badgeScore = (relevantBadges.length / prof.criteria.badges.length) * 35;
       score += badgeScore;
       if (relevantBadges.length > 0) {
-        comments.push(`?? �������� ������: ${relevantBadges.map(b => {
+        comments.push(`🏅 Значки трека: ${relevantBadges.map(b => {
           const def = BADGE_DEFS.find(d => d.id === b);
           return def ? def.icon + ' ' + def.name : b;
         }).join(', ')}`);
       }
       maxScore += 35;
     } else {
-      score += 35; // ��� ������������ �������
+      score += 35;
       maxScore += 35;
     }
 
-    // 3. ����������� (25% ����)
     const relevantSkills = prof.criteria.skills;
     let skillScore = 0;
     let skillCount = 0;
@@ -625,14 +608,13 @@ function renderRecommendations(obs, badges, compScores) {
     if (skillCount > 0) {
       const avgSkill = skillScore / skillCount;
       score += (avgSkill / 100) * 25;
-      comments.push(`?? ������� �����������: ${relevantSkills.filter(s => (compScores[s] || 0) > 50).map(s => {
+      comments.push(`📊 Компетенции: ${relevantSkills.filter(s => (compScores[s] || 0) > 50).map(s => {
         const c = COMPETENCIES.find(cc => cc.id === s);
         return c ? c.icon + ' ' + c.name : s;
       }).join(', ')}`);
     }
     maxScore += 25;
 
-    // ������� �������������
     const percentage = maxScore > 0 ? Math.round((score / maxScore) * 100) : 0;
 
     return {
@@ -642,13 +624,11 @@ function renderRecommendations(obs, badges, compScores) {
     };
   });
 
-  // ���������� �� �������������
   scored.sort((a, b) => b.score - a.score);
 
-  // ��������� HTML
   container.innerHTML = scored.map(prof => {
     const level = prof.score >= 70 ? 'high' : prof.score >= 40 ? 'medium' : 'low';
-    const levelText = prof.score >= 70 ? '?? �������� ����������' : prof.score >= 40 ? '?? ������� ����������' : '?? ���� ���������';
+    const levelText = prof.score >= 70 ? '✓ Высокая совместимость' : prof.score >= 40 ? '⚠ Средняя совместимость' : '— Низкая совместимость';
 
     return `
       <div class="recommendation-card rarity-${level}">
@@ -673,7 +653,7 @@ function renderRecommendations(obs, badges, compScores) {
 function calcCompetencies(obs) {
   const scores = {};
   COMPETENCIES.forEach(c => scores[c.id] = 0);
-  let counts = {};
+  const counts = {};
   COMPETENCIES.forEach(c => counts[c.id] = 0);
 
   obs.forEach(o => {
@@ -688,8 +668,7 @@ function calcCompetencies(obs) {
     });
   });
 
-  // ������������ 0-100
-  const maxPossible = 6; // max per observation
+  const maxPossible = 6;
   const result = {};
   COMPETENCIES.forEach(c => {
     result[c.id] = counts[c.id] > 0
@@ -709,7 +688,6 @@ function renderRadarChart(scores) {
 
   ctx.clearRect(0, 0, W, H);
 
-  // Grid
   for (let r = 1; r <= 5; r++) {
     ctx.beginPath();
     for (let i = 0; i < N; i++) {
@@ -725,7 +703,6 @@ function renderRadarChart(scores) {
     ctx.stroke();
   }
 
-  // Axes
   COMPETENCIES.forEach((c, i) => {
     const angle = (i / N) * Math.PI * 2 - Math.PI / 2;
     ctx.beginPath();
@@ -734,7 +711,6 @@ function renderRadarChart(scores) {
     ctx.strokeStyle = 'rgba(255,255,255,0.1)';
     ctx.stroke();
 
-    // Labels
     const lx = cx + Math.cos(angle) * (R + 20);
     const ly = cy + Math.sin(angle) * (R + 20);
     ctx.font = '11px sans-serif';
@@ -744,7 +720,6 @@ function renderRadarChart(scores) {
     ctx.fillText(c.icon, lx, ly);
   });
 
-  // Data polygon
   ctx.beginPath();
   COMPETENCIES.forEach((c, i) => {
     const angle = (i / N) * Math.PI * 2 - Math.PI / 2;
@@ -759,11 +734,10 @@ function renderRadarChart(scores) {
   grad.addColorStop(1, 'rgba(237,118,21,0.15)');
   ctx.fillStyle = grad;
   ctx.fill();
-  ctx.strokeStyle = '#ed7615';
+  ctx.strokeStyle = getComputedStyle(document.documentElement).getPropertyValue('--orange').trim() || '#ed7615';
   ctx.lineWidth = 2;
   ctx.stroke();
 
-  // Dots
   COMPETENCIES.forEach((c, i) => {
     const angle = (i / N) * Math.PI * 2 - Math.PI / 2;
     const val = (scores[c.id] || 0) / 100;
@@ -771,7 +745,7 @@ function renderRadarChart(scores) {
     const y = cy + Math.sin(angle) * R * val;
     ctx.beginPath();
     ctx.arc(x, y, 4, 0, Math.PI*2);
-    ctx.fillStyle = '#ed7615';
+    ctx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue('--orange').trim() || '#ed7615';
     ctx.fill();
   });
 }
@@ -791,7 +765,6 @@ function renderCompBars(scores) {
 }
 
 function renderDISC(obs) {
-  // ������������ �� ������ �������
   const rawScores = {D:0, I:0, S:0, C:0};
   const counts = {D:0, I:0, S:0, C:0};
 
@@ -809,7 +782,6 @@ function renderDISC(obs) {
     });
   });
 
-  // ������������ 0-100 (min 10 ��� �����������)
   const maxVal = Math.max(...Object.values(rawScores), 1);
   const disc = {};
   for (const t of ['D','I','S','C']) {
@@ -818,21 +790,18 @@ function renderDISC(obs) {
       : 10;
   }
 
-  // ����� DISC �� config.js
-  const colors = DISC_COLORS; // {D:'#EF4444', I:'#FBBF24', S:'#22C55E', C:'#3B82F6'}
+  const colors = DISC_COLORS;
 
-  // ������ � ����������
   const labels = {
-    D:{label:'�������������', color:colors.D, desc:'�������������, ���������'},
-    I:{label:'�������',       color:colors.I, desc:'�������, ���������'},
-    S:{label:'������������',  color:colors.S, desc:'���������, ��������'},
-    C:{label:'������������',  color:colors.C, desc:'��������, ������'}
+    D:{label:'Доминирование', color:colors.D, desc:'Активный, решительный'},
+    I:{label:'Влияние',       color:colors.I, desc:'Общительный, креативный'},
+    S:{label:'Стабильность',  color:colors.S, desc:'Уравновешенный, надёжный'},
+    C:{label:'Постоянство',  color:colors.C, desc:'Аналитик, точный'}
   };
 
   const dominant = Object.entries(disc).sort((a,b) => b[1]-a[1])[0];
 
-  // ������ ����� � �������
-  var discBarsEl = document.getElementById('disc-bars');
+  const discBarsEl = document.getElementById('disc-bars');
   if (discBarsEl) discBarsEl.innerHTML = ['D','I','S','C'].map(t => `
     <div class="disc-row">
       <div class="disc-type-label" style="color:${labels[t].color}">${t}</div>
@@ -844,26 +813,24 @@ function renderDISC(obs) {
       <div class="disc-type-desc">${labels[t].desc}</div>
     </div>`).join('');
 
-  // ������������ ���
   const domEl = document.getElementById('disc-dominant');
   if (domEl) {
     domEl.innerHTML =
-      `<span style="color:${labels[dominant[0]].color}">������������ ���: ${dominant[0]} � ${labels[dominant[0]].label}</span>`;
+      `<span style="color:${labels[dominant[0]].color}">Доминирует тип: ${dominant[0]} — ${labels[dominant[0]].label}</span>`;
   }
 
-  // �����-���� DISC
-  const comboHtml = '<h3 style="font-size:0.8rem;color:var(--muted);margin:12px 0 8px;font-weight:600;">�����-���� DISC</h3>' +
+  const existingCombo = domEl?.parentNode?.querySelector('.disc-combo-section');
+  if (existingCombo) existingCombo.remove();
+
+  const comboHtml = '<div class="disc-combo-section"><h3 style="font-size:0.8rem;color:var(--muted);margin:12px 0 8px;font-weight:600;">Комбо-типы DISC</h3>' +
     Object.entries(DISC_COMBO).map(([key, val]) => `
       <div class="disc-row" style="margin-bottom:6px;">
         <div class="disc-type-label" style="color:${val.color}">${key}</div>
-        <div class="disc-type-desc"><strong>${val.label}</strong> � ${val.desc}</div>
-      </div>`).join('');
+        <div class="disc-type-desc"><strong>${val.label}</strong> · ${val.desc}</div>
+      </div>`).join('') + '</div>';
 
-  // ��������� ����� ����� disc-dominant
   if (domEl && domEl.parentNode) {
-    const comboContainer = document.createElement('div');
-    comboContainer.innerHTML = comboHtml;
-    domEl.parentNode.appendChild(comboContainer);
+    domEl.parentNode.insertAdjacentHTML('beforeend', comboHtml);
   }
 }
 
@@ -875,22 +842,22 @@ function renderCareer(obs, badges) {
 
   const profiles = {
     bio: {
-      icon:'??', title:'BioTech �������������',
-      roles: ['����������', '������', '������'],
-      desc: '������� ��������� � ������� ��������, �������� � ������� ������������.',
-      clubs: ['?? ������ ����', '?? ��������', '?? �����������']
+      icon:'🧬', title:'BioTech направление',
+      roles: ['Биоинженер', 'Агротехнолог', 'Генетик'],
+      desc: 'Работа с биологическими системами, лабораторные исследования и современные технологии.',
+      clubs: ['🔬 Юный биолог', '🌿 Эко-детектив', '🧪 Научная лаборатория']
     },
     eng: {
-      icon:'??', title:'������� ��������',
-      roles: ['������������', 'IoT-�����������', '�������'],
-      desc: '���������� � ������������ ����������, ������������ � �������������.',
-      clubs: ['?? �������������', '?? �����������', '??? ����������������']
+      icon:'⚙️', title:'Инженерное дело',
+      roles: ['Робототехник', 'IoT-разработчик', 'Изобретатель'],
+      desc: 'Проектирование и создание механизмов, электроника и программирование микроконтроллеров.',
+      clubs: ['🔧 Инженерный клуб', '⚡ Энерджи-Хак', '💻 Робототехника']
     },
     media: {
-      icon:'??', title:'�����-������',
-      roles: ['�������', 'SMM-����������', '���������'],
-      desc: '������ � �������� ��������, ������������ � ������ � ����������.',
-      clubs: ['?? �����������������', '?? Digital-�����', '??? ������������']
+      icon:'🎥', title:'Медиа-мастерство',
+      roles: ['Видеограф', 'SMM-специалист', 'Контент-мейкер'],
+      desc: 'Создание и монтаж видеоконтента, работа с аудиторией и продвижение в медиа.',
+      clubs: ['📸 Медиастудия', '🎬 Digital-кино', '🎙️ Подкаст-студия']
     }
   };
 
@@ -908,7 +875,7 @@ function renderCareer(obs, badges) {
       <div class="career-roles">
         ${p.roles.map(r => `<span class="career-role-chip">${r}</span>`).join('')}
       </div>
-      <div class="career-clubs-title">������������� ������:</div>
+      <div class="career-clubs-title">Рекомендуемые клубы:</div>
       <div class="career-clubs">
         ${p.clubs.map(c => `<span class="career-club">${c}</span>`).join('')}
       </div>`;
@@ -916,7 +883,7 @@ function renderCareer(obs, badges) {
 }
 
 // =============================================
-//  �������� 5: �������
+//  Страница 5: Дашборд
 // =============================================
 
 function renderDashboard() {
@@ -935,10 +902,10 @@ function renderDashboard() {
     avgScore = (obsForList.reduce((sum, o) => sum + (o.independence + o.quality) / 2, 0) / obsForList.length).toFixed(1);
   }
 
-  var dbTotal = ge('db-total');
-  var dbTasks = ge('db-tasks');
-  var dbBadges = ge('db-badges');
-  var dbAvg = ge('db-avg');
+  const dbTotal = ge('db-total');
+  const dbTasks = ge('db-tasks');
+  const dbBadges = ge('db-badges');
+  const dbAvg = ge('db-avg');
   if (dbTotal) dbTotal.textContent = list.length;
   if (dbTasks) dbTasks.textContent = totalObs;
   if (dbBadges) dbBadges.textContent = totalBdgs;
@@ -946,8 +913,13 @@ function renderDashboard() {
 
   const grid = document.getElementById('db-student-grid');
   if (!grid) return;
+
+  const parentEl = grid.parentElement;
+  parentEl.querySelectorAll('.clubs-section,.activities-section,.english-section,.team-section')
+    .forEach(el => el.remove());
+
   if (!list.length) {
-    grid.innerHTML = '<div class="empty-state"><div class="empty-icon">??</div><p>��� ���������� ��� ��������� ��������</p></div>';
+    grid.innerHTML = '<div class="empty-state"><div class="empty-icon">👥</div><p>Нет участников для выбранных фильтров</p></div>';
     return;
   }
 
@@ -956,19 +928,19 @@ function renderDashboard() {
     const bdgs = state.badges.filter(b => b.student_id === s.id && b.earned);
     const score = obs.length
       ? (obs.reduce((sum, o) => sum + (o.independence + o.quality) / 2, 0) / obs.length).toFixed(1)
-      : '�';
+      : '—';
     const progress = Math.round((obs.length / 30) * 100);
     const trackCounts = {bio:0, eng:0, media:0};
     obs.forEach(o => trackCounts[o.track]++);
     const dominantTrack = Object.entries(trackCounts).sort((a,b) => b[1]-a[1])[0];
-    const trackIcon = {bio:'??', eng:'??', media:'??'}[dominantTrack?.[0]] || '??';
+    const trackIcon = {bio:'🧬', eng:'⚙️', media:'🎥'}[dominantTrack?.[0]] || '📋';
 
     return `<div class="db-student-card" onclick="openStudentTalents('${s.id}')">
       <div class="db-sc-top">
         <div class="db-sc-avatar">${(s.first_name?.[0]||'')+(s.last_name?.[0]||'')}</div>
         <div class="db-sc-info">
           <strong>${s.first_name} ${s.last_name}</strong>
-          <span>����� ${s.squad} � ����� ${s.shift} � ${s.grade} ��</span>
+          <span>отряд ${s.squad} · смена ${s.shift} · ${s.grade} кл</span>
         </div>
         <div class="db-sc-track">${trackIcon}</div>
       </div>
@@ -977,15 +949,14 @@ function renderDashboard() {
         <span>${progress}%</span>
       </div>
       <div class="db-sc-stats">
-        <div><span>${obs.length}</span><small>�������</small></div>
-        <div><span>${bdgs.length}</span><small>�������</small></div>
-        <div><span>${score}</span><small>����</small></div>
+        <div><span>${obs.length}</span><small>занятий</small></div>
+        <div><span>${bdgs.length}</span><small>значков</small></div>
+        <div><span>${score}</span><small>балл</small></div>
       </div>
       <div class="db-sc-badges">${bdgs.slice(0,5).map(b=>`<span>${b.icon}</span>`).join('')}</div>
     </div>`;
   }).join('');
 
-  // ��������� ������ ������, �����������, ����������� � �������
   renderClubsSection(grid.parentElement, null);
   renderActivitiesSection(grid.parentElement);
   renderEnglishSection(grid.parentElement);
@@ -1012,7 +983,7 @@ function openStudentTalents(id) {
 }
 
 // =============================================
-//  �������
+//  Утилиты
 // =============================================
 
 function v(id) {
@@ -1028,7 +999,6 @@ function showToast(msg, type = 'success') {
   setTimeout(() => { el.classList.remove('show'); setTimeout(() => el.remove(), 400); }, 2800);
 }
 
-// -- �������� ����������� ������ (����������� ����������) ----------------
 function getUnlockedClubs(studentId) {
   const obs = state.observations.filter(o => o.student_id === studentId);
   const maxDay = obs.length > 0 ? Math.max(...obs.map(o => o.day)) :0;
@@ -1038,81 +1008,74 @@ function getUnlockedClubs(studentId) {
   }));
 }
 
-// -- ������ �������� "� ������" ----------------
 function renderCampPage() {
-  // ����� (���������)
   const tracksContainer = document.getElementById('camp-tracks');
   if (tracksContainer) {
     tracksContainer.innerHTML = `
-      <h3 style="font-size:0.85rem;color:var(--orange);margin-bottom:12px">?? ��� ��������������� �����</h3>
+      <h3 style="font-size:0.85rem;color:var(--orange);margin-bottom:12px">🎯 Треки профессиональной ориентации</h3>
       <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:12px">
         <div>
-          <h4 style="font-size:0.8rem;color:var(--white);margin-bottom:6px">?? �����</h4>
-          ${TRACK_PROFESSIONS.media.map(p => `<div style="font-size:0.75rem;color:var(--muted);margin-bottom:4px">� <strong style="color:var(--white)">${p.title}</strong> � ${p.desc}</div>`).join('')}
+          <h4 style="font-size:0.8rem;color:var(--white);margin-bottom:6px">🎥 Медиа</h4>
+          ${TRACK_PROFESSIONS.media.map(p => `<div style="font-size:0.75rem;color:var(--muted);margin-bottom:4px">· <strong style="color:var(--white)">${p.title}</strong> · ${p.desc}</div>`).join('')}
         </div>
         <div>
-          <h4 style="font-size:0.8rem;color:var(--white);margin-bottom:6px">?? ���������</h4>
-          ${TRACK_PROFESSIONS.eng.map(p => `<div style="font-size:0.75rem;color:var(--muted);margin-bottom:4px">� <strong style="color:var(--white)">${p.title}</strong> � ${p.desc}</div>`).join('')}
+          <h4 style="font-size:0.8rem;color:var(--white);margin-bottom:6px">⚙️ Инженерия</h4>
+          ${TRACK_PROFESSIONS.eng.map(p => `<div style="font-size:0.75rem;color:var(--muted);margin-bottom:4px">· <strong style="color:var(--white)">${p.title}</strong> · ${p.desc}</div>`).join('')}
         </div>
         <div>
-          <h4 style="font-size:0.8rem;color:var(--white);margin-bottom:6px">?? �������������</h4>
-          ${TRACK_PROFESSIONS.bio.map(p => `<div style="font-size:0.75rem;color:var(--muted);margin-bottom:4px">� <strong style="color:var(--white)">${p.title}</strong> � ${p.desc}</div>`).join('')}
+          <h4 style="font-size:0.8rem;color:var(--white);margin-bottom:6px">🧬 Биотехнологии</h4>
+          ${TRACK_PROFESSIONS.bio.map(p => `<div style="font-size:0.75rem;color:var(--muted);margin-bottom:4px">· <strong style="color:var(--white)">${p.title}</strong> · ${p.desc}</div>`).join('')}
         </div>
       </div>
     `;
   }
 
-  // �����
   const clubsContainer = document.getElementById('camp-clubs');
   if (clubsContainer) {
     clubsContainer.innerHTML = `
-      <h3 style="font-size:0.85rem;color:var(--orange);margin-bottom:12px">??? ����� �� ���������</h3>
+      <h3 style="font-size:0.85rem;color:var(--orange);margin-bottom:12px">🏆 Клубы по интересам</h3>
       <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px">
         ${CAMP_CLUBS.map(club => `
           <div class="gc">
             <div style="font-size:1.5rem;margin-bottom:6px">${club.icon}</div>
             <strong style="display:block;font-size:0.85rem;margin-bottom:4px">${club.name}</strong>
             <p style="font-size:0.7rem;color:var(--muted);margin:0">${club.desc}</p>
-            ${!club.active ? '<div style="font-size:0.65rem;color:var(--orange);background:var(--orange-dim);padding:2px 8px;border-radius:10px;display:inline-block;margin-top:6px">?? ����������� � �������� ����</div>' : ''}
+            ${!club.active ? '<div style="font-size:0.65rem;color:var(--orange);background:var(--orange-dim);padding:2px 8px;border-radius:10px;display:inline-block;margin-top:6px">🔒 Откроется в следующей смене</div>' : ''}
           </div>
         `).join('')}
       </div>
       <table style="width:100%;margin-top:12px;font-size:0.75rem;color:var(--muted)">
-        <tr><th style="text-align:left;color:var(--white)">����</th><th style="text-align:left;color:var(--white)">��������</th><th style="text-align:left;color:var(--white)">�����������</th></tr>
-        <tr><td>�����</td><td>������, ��������, �������� � ��������</td><td>�</td></tr>
-        <tr><td>����������</td><td>�����, ���, ����������</td><td>�</td></tr>
-        <tr><td>������</td><td>�����, �������, ������� ����, �����, ������ ����</td><td>����������� � �������� �������� ����-���������</td></tr>
-        <tr><td>�����</td><td>FIFA, Gran Turismo, Nintendo Wii, Roblox, Minecraft, Just Dance, PlayStation</td><td>����������� � �������� �������� ����-���������</td></tr>
+        <tr><th style="text-align:left;color:var(--white)">Клуб</th><th style="text-align:left;color:var(--white)">Описание</th><th style="text-align:left;color:var(--white)">Доступность</th></tr>
+        <tr><td>Спорт</td><td>Бадминтон, теннис, плавание и фитнес</td><td>✓</td></tr>
+        <tr><td>Творчество</td><td>Рисование, лепка, музыка</td><td>✓</td></tr>
+        <tr><td>Настольные игры</td><td>Монополия, UNO, настолки и др.</td><td>Доступен после лагеря</td></tr>
+        <tr><td>Киберспорт</td><td>FIFA, Gran Turismo, Nintendo Wii, Roblox, Minecraft, Just Dance, PlayStation</td><td>Доступен после лагеря</td></tr>
       </table>
     `;
   }
 
-  // ����������
   const actContainer = document.getElementById('camp-activities');
   if (actContainer) {
     renderActivitiesSection(actContainer);
   }
 
-  // ����������
   const engContainer = document.getElementById('camp-english');
   if (engContainer) {
     renderEnglishSection(engContainer);
   }
 
-  // �������
   const teamContainer = document.getElementById('camp-team');
   if (teamContainer) {
     renderCampTeam(teamContainer);
   }
 }
 
-// -- ������ ������ ������ �� �������� ----------------
 function renderClubsSection(container, studentId) {
   const clubs = studentId ? getUnlockedClubs(studentId) : CAMP_CLUBS;
   const html = `
     <div class="clubs-section" style="margin-top:20px">
       <h3 style="font-size:0.85rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:12px">
-        ??? ����� ������
+        🏆 Клубы лагеря
       </h3>
       <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px">
         ${clubs.map(club => `
@@ -1120,7 +1083,7 @@ function renderClubsSection(container, studentId) {
             <div style="font-size:1.5rem;margin-bottom:6px">${club.icon}</div>
             <strong style="display:block;font-size:0.85rem;margin-bottom:4px">${club.name}</strong>
             <p style="font-size:0.7rem;color:var(--muted);margin:0">${club.desc}</p>
-            ${!club.unlocked ? '<div style="position:absolute;top:8px;right:8px;font-size:0.65rem;color:var(--orange);background:var(--orange-dim);padding:2px 8px;border-radius:10px">?? ���� ' + club.unlockDay + '+</div>' : ''}
+            ${!club.unlocked ? '<div style="position:absolute;top:8px;right:8px;font-size:0.65rem;color:var(--orange);background:var(--orange-dim);padding:2px 8px;border-radius:10px">🔒 день ' + club.unlockDay + '+</div>' : ''}
           </div>
         `).join('')}
       </div>
@@ -1129,16 +1092,15 @@ function renderClubsSection(container, studentId) {
   container.insertAdjacentHTML('beforeend', html);
 }
 
-// -- ������ �������� ����������� ----------------
 function renderActivitiesSection(container) {
   const html = `
     <div class="activities-section" style="margin-top:20px">
       <h3 style="font-size:0.85rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:12px">
-        ?? ���������� � �������� ���������
+        🎯 Активности и вечерние мероприятия
       </h3>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
         <div>
-          <h4 style="font-size:0.75rem;color:var(--orange);margin-bottom:8px">������� ����������</h4>
+          <h4 style="font-size:0.75rem;color:var(--orange);margin-bottom:8px">Дневные активности</h4>
           ${EVENING_ACTIVITIES.day.map(a => `
             <div class="gc" style="padding:8px;margin-bottom:6px">
               <strong style="font-size:0.8rem">${a.name}</strong>
@@ -1147,7 +1109,7 @@ function renderActivitiesSection(container) {
           `).join('')}
         </div>
         <div>
-          <h4 style="font-size:0.75rem;color:var(--orange);margin-bottom:8px">�������� ���������</h4>
+          <h4 style="font-size:0.75rem;color:var(--orange);margin-bottom:8px">Вечерние мероприятия</h4>
           ${EVENING_ACTIVITIES.evening.map(a => `
             <div class="gc" style="padding:8px;margin-bottom:6px">
               <strong style="font-size:0.8rem">${a.name}</strong>
@@ -1161,12 +1123,11 @@ function renderActivitiesSection(container) {
   container.insertAdjacentHTML('beforeend', html);
 }
 
-// -- ������ ����������� ����� ----------------
 function renderEnglishSection(container) {
   const html = `
     <div class="english-section" style="margin-top:20px">
       <h3 style="font-size:0.85rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:12px">
-        ?? �������� ������������
+        🌐 Языковая составляющая
       </h3>
       <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px">
         ${ENGLISH_COMPONENTS.map(e => `
@@ -1181,12 +1142,11 @@ function renderEnglishSection(container) {
   container.insertAdjacentHTML('beforeend', html);
 }
 
-// -- ������ ������� ������ ----------------
 function renderCampTeam(container) {
   const html = `
     <div class="team-section" style="margin-top:20px">
       <h3 style="font-size:0.85rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:12px">
-        ?? ������� ������
+        👥 Команда лагеря
       </h3>
       <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:10px">
         ${CAMP_TEAM.map(m => `
@@ -1205,4 +1165,3 @@ function renderCampTeam(container) {
   `;
   container.insertAdjacentHTML('beforeend', html);
 }
-
