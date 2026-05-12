@@ -531,6 +531,9 @@ function renderTalentCard(studentId) {
         </div>`;
       }).join('')
     : '<p class="empty-note">Наблюдений пока нет</p>';
+
+  const aiSection = document.getElementById('ai-insights-section');
+  if (aiSection) aiSection.innerHTML = renderAIInsights(studentId);
 }
 
 function renderRecommendations(obs, badges, compScores) {
@@ -1140,6 +1143,263 @@ function renderEnglishSection(container) {
     </div>
   `;
   container.insertAdjacentHTML('beforeend', html);
+}
+
+// =============================================
+//  AI ANALYTICS (Local Rule-Based Engine)
+// =============================================
+
+const AI_EXTRA_CURRICULAR = {
+  programming: {
+    name: 'Программирование', icon: '💻',
+    desc: 'Python, Scratch, Roblox Studio — логика и творчество через код',
+    tags: ['problem_solving', 'creativity', 'learning_ability']
+  },
+  chess: {
+    name: 'Шахматы', icon: '♟️',
+    desc: 'Стратегическое мышление, концентрация, просчёт на несколько ходов',
+    tags: ['critical_thinking', 'persistence', 'self_organization']
+  },
+  englishImmersion: {
+    name: 'Английский клуб', icon: '🌍',
+    desc: 'Разговорный клуб с носителями, проекты на английском',
+    tags: ['communication', 'learning_ability', 'social_position']
+  },
+  robotics: {
+    name: 'Робототехника', icon: '🤖',
+    desc: ' LEGO, Arduino — механику и программированию через практику',
+    tags: ['problem_solving', 'creativity', 'initiative']
+  },
+  publicSpeaking: {
+    name: 'Ораторское мастерство', icon: '🎤',
+    desc: 'Уверенная речь, презентации, дебаты — искусство убеждать',
+    tags: ['communication', 'initiative', 'social_position']
+  },
+  creativeWriting: {
+    name: 'Творческое письмо', icon: '✍️',
+    desc: 'Сторителлинг, поэзия, сценарии — выражение через текст',
+    tags: ['creativity', 'communication', 'curiosity']
+  },
+  mathClub: {
+    name: 'Математический клуб', icon: '🔢',
+    desc: 'Олимпиадные задачи, логика, быстрый счёт — математика как игра',
+    tags: ['critical_thinking', 'learning_ability', 'problem_solving']
+  },
+  artDesign: {
+    name: 'Арт-дизайн', icon: '🎨',
+    desc: 'Графический дизайн, иллюстрация, цифровое искусство',
+    tags: ['creativity', 'adaptability', 'self_organization']
+  },
+  scienceClub: {
+    name: 'Научный кружок', icon: '🔬',
+    desc: 'Эксперименты, исследования, проектная деятельность',
+    tags: ['curiosity', 'learning_ability', 'problem_solving']
+  },
+  dramaTheater: {
+    name: 'Театральная студия', icon: '🎭',
+    desc: 'Актёрское мастерство, импровизация, работа с голосом',
+    tags: ['communication', 'adaptability', 'creativity']
+  }
+};
+
+const AI_LEARNING_STYLES = {
+  kinesthetic: { name: 'Кинестетик', icon: '🤲', desc: 'Учится через прикосновения, движение и практику. Лучше всего — строить, собирать, трогать.' },
+  visual: { name: 'Визуал', icon: '👁️', desc: 'Учится через образы, схемы и видео. Запоминает то, что видит.' },
+  auditory: { name: 'Аудиал', icon: '👂', desc: 'Учится через слух и разговор. Лучше всего — обсуждать и слушать.' },
+  reading: { name: 'Читатель', icon: '📖', desc: 'Учится через текст. Лучше всего — читать инструкции и писать заметки.' }
+};
+
+function analyzeStudentProfile(obs, badges, compScores) {
+  const profile = {
+    strengths: [],
+    weaknesses: [],
+    dominantTrack: null,
+    learningStyle: null,
+    engagementLevel: 'neutral',
+    personalityTraits: [],
+    recommendedExtracurricular: [],
+    summary: ''
+  };
+
+  if (!obs.length) {
+    profile.summary = 'Недостаточно данных для анализа. Добавьте наблюдения, чтобы получить персональные рекомендации.';
+    return profile;
+  }
+
+  const sorted = Object.entries(compScores).sort((a, b) => b[1] - a[1]);
+  const topSkills = sorted.slice(0, 4).filter(([_, v]) => v > 30);
+  const lowSkills = sorted.slice(-3).filter(([_, v]) => v < 30);
+
+  topSkills.forEach(([id]) => {
+    const c = COMPETENCIES.find(x => x.id === id);
+    if (c) profile.strengths.push(c);
+  });
+
+  lowSkills.forEach(([id]) => {
+    const c = COMPETENCIES.find(x => x.id === id);
+    if (c) profile.weaknesses.push(c);
+  });
+
+  const trackCounts = { bio: 0, eng: 0, media: 0 };
+  obs.forEach(o => { trackCounts[o.track]++; });
+  const dominant = Object.entries(trackCounts).sort((a, b) => b[1] - a[1])[0];
+  profile.dominantTrack = dominant[0];
+
+  const avgScore = obs.reduce((s, o) => s + (o.independence + o.quality) / 2, 0) / obs.length;
+  const initiativeRate = obs.filter(o => o.initiative).length / obs.length;
+  const totalObs = obs.length;
+  profile.engagementLevel = avgScore >= 4 && initiativeRate > 0.3 ? 'high' : avgScore >= 3 ? 'moderate' : 'low';
+
+  if (compScores['creativity'] > 50 && compScores['communication'] > 50) {
+    profile.personalityTraits.push('креативный коммуникатор', 'визуально ориентированный');
+    profile.learningStyle = AI_LEARNING_STYLES.visual;
+  } else if (compScores['problem_solving'] > 50 && compScores['critical_thinking'] > 50) {
+    profile.personalityTraits.push('аналитик', 'системный мыслитель');
+    profile.learningStyle = AI_LEARNING_STYLES.reading;
+  } else if (compScores['initiative'] > 50 && compScores['persistence'] > 50) {
+    profile.personalityTraits.push('лидер', 'инициативный');
+    profile.learningStyle = AI_LEARNING_STYLES.kinesthetic;
+  } else if (compScores['communication'] > 50 && compScores['cooperation'] > 50) {
+    profile.personalityTraits.push('командный игрок', 'социально активный');
+    profile.learningStyle = AI_LEARNING_STYLES.auditory;
+  } else {
+    profile.personalityTraits.push('разносторонний', 'всесторонне любознательный');
+    profile.learningStyle = AI_LEARNING_STYLES.visual;
+  }
+
+  const studentTags = profile.strengths.map(s => s.id);
+  const extraRecommended = Object.entries(AI_EXTRA_CURRICULAR)
+    .map(([id, ec]) => {
+      let match = 0;
+      ec.tags.forEach(tag => { if (studentTags.includes(tag)) match++; });
+      return { ...ec, id, match };
+    })
+    .filter(ec => ec.match >= 1)
+    .sort((a, b) => b.match - a.match)
+    .slice(0, 4);
+
+  profile.recommendedExtracurricular = extraRecommended;
+
+  const engagementText = {
+    high: 'Показывает отличную вовлечённость и часто проявляет инициативу. Рекомендуем расширять зону ответственности.',
+    moderate: 'Вовлечён на среднем уровне. Мотивируйте через индивидуальные достижения и признание.',
+    low: 'Показывает низкую вовлечённость. Рекомендуем поддержку и более частую обратную связь.'
+  };
+
+  const trackNames = { bio: 'Биотехнологии', eng: 'Инженерии', media: 'Медиа' };
+  const trackIcons = { bio: '🧬', eng: '⚙️', media: '🎥' };
+  const trackDesc = {
+    bio: 'Этот профиль показывает склонность к работе с природой, растениями и биологическими системами.',
+    eng: 'Этот профиль показывает склонность к конструированию, электронике и программированию.',
+    media: 'Этот профиль показывает склонность к творчеству, съёмке и работе с аудиторией.'
+  };
+
+  profile.summary = `За ${obs.length} дней участник показал средний балл ${avgScore.toFixed(1)}/5. ` +
+    `Доминирующее направление — ${trackNames[dominant[0]]} (${trackIcons[dominant[0]]}). ` +
+    `${trackDesc[dominant[0]]} ` +
+    `Сильные стороны: ${profile.strengths.slice(0, 3).map(s => s.name).join(', ') || 'требуется анализ'}. ` +
+    `${engagementText[profile.engagementLevel]}`;
+
+  return profile;
+}
+
+function renderAIInsights(studentId) {
+  const obs = state.observations.filter(o => o.student_id === studentId);
+  const badges = state.badges.filter(b => b.student_id === studentId && b.earned);
+  const compScores = calcCompetencies(obs);
+
+  if (!obs.length) {
+    return `
+      <div class="gc" style="margin-bottom:12px">
+        <h3>🧠 AI-Анализ</h3>
+        <div class="empty-note" style="padding:20px;text-align:center">
+          <p>🤖 Недостаточно данных для анализа</p>
+          <p style="font-size:0.7rem;color:var(--muted);margin-top:8px">Добавьте минимум 3 наблюдения для получения персонального анализа</p>
+        </div>
+      </div>`;
+  }
+
+  const profile = analyzeStudentProfile(obs, badges, compScores);
+  const trackNames = { bio: 'Биотехнологии', eng: 'Инженерия', media: 'Медиа' };
+  const trackIcons = { bio: '🧬', eng: '⚙️', media: '🎥' };
+  const engagementColors = { high: '#22C55E', moderate: '#FBBF24', low: '#EF4444' };
+  const engagementLabels = { high: 'Высокая', moderate: 'Средняя', low: 'Низкая' };
+  const engagementIcons = { high: '🔥', moderate: '⚡', low: '📉' };
+
+  return `
+    <div class="gc" style="margin-bottom:12px">
+      <h3>🧠 AI-Профиль участника</h3>
+
+      <div style="background:var(--glass-b);border-radius:10px;padding:14px;margin-bottom:14px">
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">
+          <span style="font-size:1.5rem">${trackIcons[profile.dominantTrack]}</span>
+          <div>
+            <strong>Доминирующий трек:</strong> ${trackNames[profile.dominantTrack]}
+            <div style="font-size:0.65rem;color:var(--muted)">${profile.personalityTraits.join(' · ')}</div>
+          </div>
+        </div>
+        <div style="display:flex;align-items:center;gap:6px">
+          <span>${engagementIcons[profile.engagementLevel]}</span>
+          <span>Вовлечённость:</span>
+          <span style="color:${engagementColors[profile.engagementLevel]};font-weight:700">${engagementLabels[profile.engagementLevel]}</span>
+        </div>
+      </div>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px">
+        <div style="background:rgba(34,197,94,0.1);border:1px solid rgba(34,197,94,0.3);border-radius:10px;padding:10px">
+          <div style="font-size:0.65rem;color:#22C55E;text-transform:uppercase;margin-bottom:6px;font-weight:700">Сильные стороны</div>
+          ${profile.strengths.slice(0, 3).map(s => `
+            <div style="display:flex;align-items:center;gap:6px;margin-bottom:4px">
+              <span>${s.icon}</span>
+              <span style="font-size:0.75rem">${s.name}</span>
+              <div style="flex:1;height:4px;background:var(--glass-b);border-radius:2px">
+                <div style="width:${s.color ? '70%' : '50%'};height:100%;background:${s.color}80;border-radius:2px"></div>
+              </div>
+            </div>
+          `).join('')}
+        </div>
+        <div style="background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.3);border-radius:10px;padding:10px">
+          <div style="font-size:0.65rem;color:#EF4444;text-transform:uppercase;margin-bottom:6px;font-weight:700">Зоны роста</div>
+          ${profile.weaknesses.slice(0, 3).map(s => `
+            <div style="display:flex;align-items:center;gap:6px;margin-bottom:4px">
+              <span>${s.icon}</span>
+              <span style="font-size:0.75rem">${s.name}</span>
+            </div>
+          `).join('')}
+        </div>
+      </div>
+
+      <div style="background:var(--glass-b);border-radius:10px;padding:12px;margin-bottom:14px">
+        <div style="font-size:0.65rem;color:var(--orange);text-transform:uppercase;margin-bottom:6px;font-weight:700">🎯 Стиль обучения</div>
+        <div style="display:flex;align-items:center;gap:8px">
+          <span style="font-size:1.2rem">${profile.learningStyle?.icon}</span>
+          <div>
+            <strong>${profile.learningStyle?.name}</strong>
+            <p style="font-size:0.65rem;color:var(--muted);margin:2px 0 0">${profile.learningStyle?.desc}</p>
+          </div>
+        </div>
+      </div>
+
+      <div style="margin-bottom:14px">
+        <div style="font-size:0.65rem;color:var(--orange);text-transform:uppercase;margin-bottom:8px;font-weight:700">📚 Рекомендуемые занятия</div>
+        <div style="display:flex;flex-direction:column;gap:8px">
+          ${profile.recommendedExtracurricular.map(ec => `
+            <div style="background:var(--glass-b);border-radius:8px;padding:10px;display:flex;gap:10px;align-items:flex-start">
+              <span style="font-size:1.2rem;flex-shrink:0">${ec.icon}</span>
+              <div>
+                <strong style="font-size:0.8rem">${ec.name}</strong>
+                <p style="font-size:0.65rem;color:var(--muted);margin:2px 0 0">${ec.desc}</p>
+              </div>
+            </div>
+          `).join('')}
+        </div>
+      </div>
+
+      <div style="background:linear-gradient(135deg,var(--orange-dim),rgba(237,118,21,0.05));border:1px solid var(--border-h);border-radius:10px;padding:12px">
+        <div style="font-size:0.65rem;color:var(--white);text-transform:uppercase;margin-bottom:6px;font-weight:700">📝 AI Заключение</div>
+        <p style="font-size:0.75rem;line-height:1.5;color:var(--white)">${profile.summary}</p>
+      </div>
+    </div>`;
 }
 
 function renderCampTeam(container) {
